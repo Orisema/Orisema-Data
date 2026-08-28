@@ -1,4 +1,15 @@
+mod api;
 mod config;
+mod crypto;
+mod error;
+mod models;
+mod postgres;
+mod repository;
+mod service;
+#[cfg(test)]
+mod tests;
+use sqlx::ConnectOptions;
+use std::{sync::Arc, time::Duration};
 
 #[tokio::main]
 async fn main() {
@@ -17,15 +28,37 @@ async fn main() {
 
 async fn run() -> Result<(), Box<dyn std::error::Error>> {
     let config = config::Config::from_env()?;
+    let credentials = crypto::Credentials::new(&config.encryption_key)?;
+    let options = config
+        .database_url
+        .parse::<sqlx::postgres::PgConnectOptions>()?
+        .disable_statement_logging();
     let pool = sqlx::postgres::PgPoolOptions::new()
         .max_connections(5)
-        .connect(&config.database_url)
+        .acquire_timeout(Duration::from_secs(config.connect_timeout))
+        .connect_with(options)
         .await?;
     sqlx::migrate!("../../migrations").run(&pool).await?;
-    let app = axum::Router::new().route(
-        "/api/v1/health",
-        axum::routing::get(|| async { axum::Json(serde_json::json!({"status":"ok"})) }),
-    );
+    let service = Arc::new(service::Service {
+        repository: repository::Repository(pool),
+        credentials,
+        driver: Arc::new(postgres::PostgresDriver {
+            connect_timeout: Duration::from_secs(config.connect_timeout),
+        }),
+    });
+    let cors = tower_http::cors::CorsLayer::new()
+        .allow_origin(config.cors_origin.parse::<axum::http::HeaderValue>()?)
+        .allow_methods([
+            axum::http::Method::GET,
+            axum::http::Method::POST,
+            axum::http::Method::PUT,
+            axum::http::Method::DELETE,
+        ])
+        .allow_headers([axum::http::header::CONTENT_TYPE]);
+    let app = axum::Router::new()
+        .nest("/api/v1", api::router(service))
+        .layer(cors)
+        .layer(tower::limit::ConcurrencyLimitLayer::new(16));
     let listener = tokio::net::TcpListener::bind(config.bind).await?;
     tracing::info!(address = %config.bind, "RustDB listening");
     axum::serve(listener, app)

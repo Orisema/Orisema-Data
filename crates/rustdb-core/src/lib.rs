@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 use serde::{Deserialize, Serialize};
+pub mod driver;
 
 /// Transport-neutral operations reserved for a future agent protocol.
 #[derive(Serialize, Deserialize)]

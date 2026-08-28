@@ -47,7 +47,7 @@ Prerequisites: Git, Node.js 24 (for configuration generation), and Docker Compos
 or Podman with a working Compose provider. The container compiles Rust and the frontend.
 
 ```sh
-git clone <repository>
+git clone https://gitlab.com/CasMaster/rustdb.git
 cd rustdb
 node scripts/init-env.mjs
 podman compose up -d --build

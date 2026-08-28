@@ -4,7 +4,8 @@ The public repository was created with explicit user authorization on 2026-08-28
 https://gitlab.com/CasMaster/rustdb (project ID 85863107).
 The local `main` branch was pushed successfully and is the remote default branch.
 The remote `origin` uses HTTPS and Git Credential Manager; no token is embedded in its URL.
-Project description and topics below remain to be configured.
+The project description and all seven topics below were configured and verified through
+the public GitLab API on 2026-08-28.
 
 For another installation, review the code and ensure no secrets are tracked, then create
 a **blank public** GitLab project named `rustdb` (without another README or license). Use:

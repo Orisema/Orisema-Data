@@ -2,6 +2,7 @@ mod api;
 mod config;
 mod crypto;
 mod error;
+mod http;
 mod models;
 mod policy;
 mod postgres;
@@ -57,10 +58,21 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
             axum::http::Method::DELETE,
         ])
         .allow_headers([axum::http::header::CONTENT_TYPE]);
+    let browser_policy = Arc::new(http::BrowserPolicy::new(
+        &config.cors_origin,
+        config.bind.port(),
+    )?);
     let app = axum::Router::new()
         .nest("/api/v1", api::router(service, config.max_rows))
+        .fallback_service(tower_http::services::ServeDir::new(
+            std::env::var("RUSTDB_STATIC_DIR").unwrap_or_else(|_| "frontend/dist".into()),
+        ))
         .layer(cors)
-        .layer(tower::limit::ConcurrencyLimitLayer::new(16));
+        .layer(tower::limit::ConcurrencyLimitLayer::new(16))
+        .layer(axum::middleware::from_fn_with_state(
+            browser_policy,
+            http::protect,
+        ));
     let listener = tokio::net::TcpListener::bind(config.bind).await?;
     tracing::info!(address = %config.bind, "RustDB listening");
     axum::serve(listener, app)

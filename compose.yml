@@ -1,0 +1,39 @@
+services:
+  rustdb:
+    build: .
+    ports:
+      - "127.0.0.1:8080:8080"
+    environment:
+      RUSTDB_DATABASE_URL: "postgresql://${POSTGRES_USER:-rustdb}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-rustdb}"
+      RUSTDB_ENCRYPTION_KEY: "${RUSTDB_ENCRYPTION_KEY:?Set RUSTDB_ENCRYPTION_KEY in .env}"
+      RUSTDB_BIND_ADDRESS: "0.0.0.0"
+      RUSTDB_PORT: "8080"
+      RUSTDB_CORS_ORIGIN: "${RUSTDB_CORS_ORIGIN:-http://localhost:8080}"
+      RUSTDB_QUERY_TIMEOUT_SECONDS: "${RUSTDB_QUERY_TIMEOUT_SECONDS:-30}"
+      RUSTDB_CONNECT_TIMEOUT_SECONDS: "${RUSTDB_CONNECT_TIMEOUT_SECONDS:-5}"
+      RUSTDB_MAX_ROWS: "${RUSTDB_MAX_ROWS:-1000}"
+      RUST_LOG: "${RUST_LOG:-info}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+  postgres:
+    image: docker.io/library/postgres:17
+    environment:
+      POSTGRES_USER: "${POSTGRES_USER:-rustdb}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}"
+      POSTGRES_DB: "${POSTGRES_DB:-rustdb}"
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - rustdb-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+volumes:
+  rustdb-data:

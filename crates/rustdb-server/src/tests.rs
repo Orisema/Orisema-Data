@@ -55,7 +55,7 @@ async fn postgres_api_lifecycle() -> Result<(), Box<dyn std::error::Error>> {
             query_timeout: Duration::from_secs(1),
         }),
     });
-    let app = api::router(service, 1000);
+    let app = api::router(service.clone(), 1000);
     assert_eq!(
         request(&app, "GET", "/health", Value::Null).await?.1,
         json!({"status":"ok"})
@@ -68,6 +68,13 @@ async fn postgres_api_lifecycle() -> Result<(), Box<dyn std::error::Error>> {
     assert!(created.get("encrypted_password").is_none());
     let id = created["id"].as_str().ok_or("Missing id")?;
     let path = format!("/connections/{id}");
+    let stored: String =
+        sqlx::query_scalar("SELECT encrypted_password FROM connections WHERE id=$1")
+            .bind(id.parse::<uuid::Uuid>()?)
+            .fetch_one(&pool)
+            .await?;
+    assert!(stored.starts_with("v1:"));
+    assert_ne!(stored, password);
     assert_eq!(
         request(&app, "POST", &format!("{path}/test"), Value::Null)
             .await?
@@ -178,6 +185,75 @@ async fn postgres_api_lifecycle() -> Result<(), Box<dyn std::error::Error>> {
         .0,
         StatusCode::BAD_REQUEST
     );
+    let mut target = service.target(id.parse()?).await?;
+    let table = format!("rustdb_test_{}", uuid::Uuid::new_v4().simple());
+    sqlx::query(&format!("CREATE TABLE {table} (id integer, value text)"))
+        .execute(&pool)
+        .await?;
+    assert!(
+        service
+            .driver
+            .execute_query(
+                &target,
+                &format!("INSERT INTO {table} VALUES (1,'blocked')"),
+                10
+            )
+            .await
+            .is_err()
+    );
+    target.read_only = false;
+    let inserted = service
+        .driver
+        .execute_query(
+            &target,
+            &format!("INSERT INTO {table} SELECT n,'ok' FROM generate_series(1,5) n RETURNING id"),
+            2,
+        )
+        .await?;
+    assert_eq!(inserted.affected_rows, 5);
+    assert_eq!(inserted.row_count, 2);
+    assert!(inserted.truncated);
+    let count: i64 = sqlx::query_scalar(&format!("SELECT count(*) FROM {table}"))
+        .fetch_one(&pool)
+        .await?;
+    assert_eq!(count, 5);
+    let failure = service
+        .driver
+        .execute_query(
+            &target,
+            &format!("UPDATE {table} SET value=repeat('x',2000000) RETURNING value"),
+            10,
+        )
+        .await;
+    assert!(matches!(
+        failure,
+        Err(rustdb_core::driver::DriverError::ResultTooLarge)
+    ));
+    let value: String = sqlx::query_scalar(&format!("SELECT value FROM {table} LIMIT 1"))
+        .fetch_one(&pool)
+        .await?;
+    assert_eq!(value, "ok", "Oversize write results must roll back");
+    let typed=service.driver.execute_query(&target,"SELECT ARRAY[1,2] AS a, '{}'::jsonb AS j, '2026-01-01'::date AS d, 1 AS repeated, 2 AS repeated",10).await?;
+    assert_eq!(
+        typed.rows[0],
+        vec![
+            json!("{1,2}"),
+            json!("{}"),
+            json!("2026-01-01"),
+            json!(1),
+            json!(2)
+        ]
+    );
+    assert!(
+        service
+            .driver
+            .list_columns(&target, "public' OR '1'='1", "anything")
+            .await?
+            .is_empty()
+    );
+    sqlx::query(&format!("DROP TABLE {table}"))
+        .execute(&pool)
+        .await?;
     assert_eq!(
         request(&app, "DELETE", &path, Value::Null).await?.0,
         StatusCode::NO_CONTENT

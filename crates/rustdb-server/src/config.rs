@@ -25,12 +25,12 @@ impl Config {
         Ok(Self {
             database_url: env::var("RUSTDB_DATABASE_URL")?,
             encryption_key: env::var("RUSTDB_ENCRYPTION_KEY")?,
-            bind: format!(
-                "{}:{}",
-                env::var("RUSTDB_BIND_ADDRESS").unwrap_or_else(|_| "127.0.0.1".into()),
-                number("RUSTDB_PORT", 8080, 65535)?
-            )
-            .parse()?,
+            bind: SocketAddr::new(
+                env::var("RUSTDB_BIND_ADDRESS")
+                    .unwrap_or_else(|_| "127.0.0.1".into())
+                    .parse()?,
+                number("RUSTDB_PORT", 8080, 65535)? as u16,
+            ),
             query_timeout: number("RUSTDB_QUERY_TIMEOUT_SECONDS", 30, 300)?,
             connect_timeout: number("RUSTDB_CONNECT_TIMEOUT_SECONDS", 5, 60)?,
             max_rows: number("RUSTDB_MAX_ROWS", 1000, 10000)? as usize,

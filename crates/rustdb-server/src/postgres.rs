@@ -157,13 +157,17 @@ impl DatabaseDriver for PostgresDriver {
                         }
                         let mut values = Vec::with_capacity(row.len());
                         for (index, column) in row.columns().iter().enumerate() {
+                            bytes += 32; // Include NULLs and per-cell allocation/JSON overhead.
+                            if bytes > 8 * 1024 * 1024 {
+                                return Err(DriverError::ResultTooLarge);
+                            }
                             let raw = row.try_get_raw(index).map_err(db_error)?;
                             if raw.is_null() {
                                 values.push(Value::Null);
                                 continue;
                             }
                             let text = raw.as_str().map_err(|_| DriverError::Query)?;
-                            bytes += text.len();
+                            bytes += text.len().saturating_mul(6); // Worst-case JSON escaping.
                             if bytes > 8 * 1024 * 1024 {
                                 return Err(DriverError::ResultTooLarge);
                             }

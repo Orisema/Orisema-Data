@@ -1,0 +1,62 @@
+stages: [check, test, clippy, frontend, build]
+
+default:
+  image: rust:slim-bookworm
+  before_script:
+    - apt-get update && apt-get install -y --no-install-recommends build-essential pkg-config ca-certificates
+  cache:
+    key: "rust-${CI_COMMIT_REF_SLUG}"
+    paths: [target/, .cargo/registry/, .cargo/git/]
+
+variables:
+  CARGO_HOME: "$CI_PROJECT_DIR/.cargo"
+  CARGO_BUILD_JOBS: "2"
+
+check:
+  stage: check
+  script:
+    - rustup component add rustfmt
+    - cargo fmt --all -- --check
+    - cargo check --locked --workspace
+
+test:
+  stage: test
+  services:
+    - name: postgres:17
+      alias: postgres
+  variables:
+    POSTGRES_USER: postgres
+    POSTGRES_DB: rustdb_test
+    POSTGRES_HOST_AUTH_METHOD: trust
+    RUSTDB_TEST_DATABASE_URL: "postgresql://postgres@postgres:5432/rustdb_test"
+  script:
+    - cargo test --locked --workspace -- --include-ignored
+
+clippy:
+  stage: clippy
+  script:
+    - rustup component add clippy
+    - cargo clippy --locked --workspace --all-targets -- -D warnings
+
+frontend:
+  stage: frontend
+  image: node:24-bookworm-slim
+  before_script: []
+  cache: []
+  script:
+    - cd frontend
+    - npm ci
+    - npm run lint
+    - npm test
+    - npm run build
+  artifacts:
+    paths: [frontend/dist/]
+    expire_in: 7 days
+
+build:
+  stage: build
+  script:
+    - cargo build --locked --release -p rustdb-server
+  artifacts:
+    paths: [target/release/rustdb-server, frontend/dist/]
+    expire_in: 7 days

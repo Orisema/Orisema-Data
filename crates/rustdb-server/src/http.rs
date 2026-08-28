@@ -18,6 +18,8 @@ impl BrowserPolicy {
             || uri.authority().is_none()
             || uri.path() != "/"
             || uri.query().is_some()
+            || origin.ends_with('/')
+            || uri.authority().is_some_and(|a| a.as_str().contains('@'))
         {
             return Err("RUSTDB_CORS_ORIGIN must be an exact HTTP(S) origin".into());
         }
@@ -26,10 +28,10 @@ impl BrowserPolicy {
             format!("localhost:{port}"),
             format!("[::1]:{port}"),
         ];
+        let mut origins: Vec<String> = hosts.iter().map(|host| format!("http://{host}")).collect();
         if let Some(authority) = uri.authority() {
             hosts.push(authority.to_string());
         }
-        let mut origins: Vec<String> = hosts.iter().map(|host| format!("http://{host}")).collect();
         origins.push(origin.to_owned());
         Ok(Self { hosts, origins })
     }

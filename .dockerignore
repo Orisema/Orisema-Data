@@ -4,6 +4,7 @@
 **/.env
 **/.env.*
 target
+artifacts
 frontend/node_modules
 frontend/dist
 *.log

@@ -1,5 +1,35 @@
 # Verification record — 2026-08-28
 
+## Latest status after authorized full WSL restart
+
+- WSL and Podman were restarted successfully. Debian was started again, and the three
+  previously running user containers (`templates-mariadb-staging`, `gerador-litestar-staging`,
+  `gerador-bancos-staging`) returned healthy. No existing volumes were deleted.
+- All **6 Rust tests**, including PostgreSQL integration, passed again in release mode.
+- The native Windows server is running on `http://127.0.0.1:8080`, serving the production
+  frontend. Browser connection testing, schema/table exploration and SELECT were verified
+  again with four demo products, using a dedicated PostgreSQL SELECT-only role.
+- `podman compose config --quiet` passed, and Compose's PostgreSQL service started healthy.
+  The Windows API proxy was still using the old SSH port; restarting just that proxy
+  restored normal `podman compose` operation. The temporary local SSH tunnel was stopped.
+- The cached Rust 1.98 image contained an unreadable compiler library after the disk
+  failure. A clean Rust 1.97 image was selected via the new `RUSTDB_BUILD_IMAGE` override.
+  The actual **Linux release compilation passed** in that image.
+- Disk space was exhausted again while committing the build layer, before the final
+  runtime image was created. A second authorized WSL restart restored services. Builds
+  are now paused pending more free disk space; the **final RustDB image and full application
+  Compose deployment remain unverified**. Only the PostgreSQL Compose service was deployed.
+- The Dockerfile now retains only the server binary in the build output layer and removes
+  generated target/registry files before committing it. This disk-saving adjustment has
+  not yet been exercised by a complete build. Reserve at least 15 GiB before retrying;
+  this is a conservative recommendation, not a measured upper bound.
+- Only RustDB-generated Cargo artifacts were cleaned. The Windows executable was preserved
+  in `artifacts/rustdb-server.exe` and copied back to `target/release/rustdb-server.exe`.
+  No global image-cache cleanup or filesystem repair was performed. Existing damaged
+  image layers may still need attention; this is not a filesystem-integrity certification.
+
+The remaining sections preserve the earlier verification history.
+
 ## Confirmed before the container infrastructure failure
 
 - `cargo check --workspace`: passed.

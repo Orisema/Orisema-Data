@@ -1,6 +1,10 @@
 services:
   rustdb:
-    build: .
+    image: localhost/rustdb:0.1
+    build:
+      context: .
+      args:
+        RUST_IMAGE: "${RUSTDB_BUILD_IMAGE:-rust:slim-bookworm}"
     ports:
       - "127.0.0.1:8080:8080"
     environment:

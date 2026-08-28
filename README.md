@@ -56,7 +56,10 @@ docker compose up -d --build
 ```
 
 Open **http://localhost:8080**. Migrations run automatically before serving requests.
-Reserve several GiB of free disk space for the initial dependency and container builds.
+Reserve at least 15 GiB of free host disk space before an initial container build;
+actual usage depends on existing image layers and the container engine. About 6 GiB
+was insufficient on the validation machine when committing build layers. Do not
+retry a failed build on a nearly full disk.
 The generator refuses to overwrite an existing `.env`. You may instead copy
 `.env.example` and supply your own values. Back up the key securely; do not regenerate
 it for an existing configuration database.
@@ -119,6 +122,7 @@ Never version secrets. Container environment is supplied by Compose.
 | `RUSTDB_CONNECT_TIMEOUT_SECONDS` | `5`, range 1–60 |
 | `RUSTDB_MAX_ROWS` | `1000`, range 1–10000; request may choose a lower cap |
 | `RUSTDB_STATIC_DIR` | `frontend/dist` |
+| `RUSTDB_BUILD_IMAGE` | Optional container compiler image override; defaults to `rust:slim-bookworm` |
 | `RUST_LOG` | `info`; avoid verbose dependency tracing |
 | `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` | Compose internal database settings |
 

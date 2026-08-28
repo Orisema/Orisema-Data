@@ -52,9 +52,10 @@ async fn postgres_api_lifecycle() -> Result<(), Box<dyn std::error::Error>> {
         credentials: Credentials::new(&STANDARD.encode([9; 32]))?,
         driver: Arc::new(PostgresDriver {
             connect_timeout: Duration::from_secs(5),
+            query_timeout: Duration::from_secs(1),
         }),
     });
-    let app = api::router(service);
+    let app = api::router(service, 1000);
     assert_eq!(
         request(&app, "GET", "/health", Value::Null).await?.1,
         json!({"status":"ok"})
@@ -87,6 +88,95 @@ async fn postgres_api_lifecycle() -> Result<(), Box<dyn std::error::Error>> {
             .await?
             .0,
         StatusCode::OK
+    );
+    let query_path = format!("{path}/query");
+    assert_eq!(
+        request(&app, "GET", &format!("{path}/schemas"), Value::Null)
+            .await?
+            .0,
+        StatusCode::OK
+    );
+    assert_eq!(
+        request(
+            &app,
+            "GET",
+            &format!("{path}/schemas/public/tables"),
+            Value::Null
+        )
+        .await?
+        .0,
+        StatusCode::OK
+    );
+    assert_eq!(
+        request(
+            &app,
+            "GET",
+            &format!("{path}/schemas/public/tables/connections/columns"),
+            Value::Null
+        )
+        .await?
+        .0,
+        StatusCode::OK
+    );
+    let (status,result) = request(&app,"POST",&query_path,json!({"sql":"SELECT 1::int4 AS id, NULL::text AS empty, true AS flag, 9007199254740993::bigint AS exact, 12.50::numeric AS amount"})).await?;
+    assert_eq!(status, StatusCode::OK, "{result}");
+    assert_eq!(
+        result["rows"][0],
+        json!([1, null, true, "9007199254740993", "12.50"])
+    );
+    let (_, result) = request(
+        &app,
+        "POST",
+        &query_path,
+        json!({"sql":"SELECT * FROM generate_series(1,100)","max_rows":3}),
+    )
+    .await?;
+    assert_eq!(result["row_count"], 3);
+    assert_eq!(result["truncated"], true);
+    let (_, result) = request(
+        &app,
+        "POST",
+        &query_path,
+        json!({"sql":"SELECT 1 AS empty WHERE false"}),
+    )
+    .await?;
+    assert_eq!(result["row_count"], 0);
+    assert_eq!(result["columns"][0]["name"], "empty");
+    for sql in [
+        "DELETE FROM connections",
+        "SELECT 1; SELECT 2",
+        "SET transaction_read_only=off",
+        "WITH deleted AS (DELETE FROM connections RETURNING *) SELECT * FROM deleted",
+    ] {
+        assert_eq!(
+            request(&app, "POST", &query_path, json!({"sql":sql}))
+                .await?
+                .0,
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "{sql}"
+        );
+    }
+    assert_eq!(
+        request(
+            &app,
+            "POST",
+            &query_path,
+            json!({"sql":"SELECT pg_sleep(3)"})
+        )
+        .await?
+        .0,
+        StatusCode::GATEWAY_TIMEOUT
+    );
+    assert_eq!(
+        request(
+            &app,
+            "POST",
+            &query_path,
+            json!({"sql":"SELECT 1","max_rows":1001})
+        )
+        .await?
+        .0,
+        StatusCode::BAD_REQUEST
     );
     assert_eq!(
         request(&app, "DELETE", &path, Value::Null).await?.0,

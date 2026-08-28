@@ -3,6 +3,7 @@ mod config;
 mod crypto;
 mod error;
 mod models;
+mod policy;
 mod postgres;
 mod repository;
 mod service;
@@ -44,6 +45,7 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
         credentials,
         driver: Arc::new(postgres::PostgresDriver {
             connect_timeout: Duration::from_secs(config.connect_timeout),
+            query_timeout: Duration::from_secs(config.query_timeout),
         }),
     });
     let cors = tower_http::cors::CorsLayer::new()
@@ -56,7 +58,7 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
         ])
         .allow_headers([axum::http::header::CONTENT_TYPE]);
     let app = axum::Router::new()
-        .nest("/api/v1", api::router(service))
+        .nest("/api/v1", api::router(service, config.max_rows))
         .layer(cors)
         .layer(tower::limit::ConcurrencyLimitLayer::new(16));
     let listener = tokio::net::TcpListener::bind(config.bind).await?;

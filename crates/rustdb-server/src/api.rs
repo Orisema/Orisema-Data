@@ -13,7 +13,7 @@ use std::sync::Arc;
 use uuid::Uuid;
 type AppState = State<Arc<Service>>;
 
-pub fn router(service: Arc<Service>) -> Router {
+pub fn router(service: Arc<Service>, max_rows: usize) -> Router {
     Router::new()
         .route(
             "/health",
@@ -22,8 +22,72 @@ pub fn router(service: Arc<Service>) -> Router {
         .route("/connections", get(list).post(create))
         .route("/connections/{id}", get(read).put(update).delete(delete))
         .route("/connections/{id}/test", post(test))
+        .route("/connections/{id}/schemas", get(schemas))
+        .route("/connections/{id}/schemas/{schema}/tables", get(tables))
+        .route(
+            "/connections/{id}/schemas/{schema}/tables/{table}/columns",
+            get(columns),
+        )
+        .route("/connections/{id}/query", post(query))
+        .layer(axum::Extension(max_rows))
         .layer(DefaultBodyLimit::max(128 * 1024))
         .with_state(service)
+}
+
+async fn schemas(State(s): AppState, Path(id): Path<Uuid>) -> Result<Json<Vec<String>>, AppError> {
+    Ok(Json(s.driver.list_schemas(&s.target(id).await?).await?))
+}
+async fn tables(
+    State(s): AppState,
+    Path((id, schema)): Path<(Uuid, String)>,
+) -> Result<Json<Vec<rustdb_core::driver::TableInfo>>, AppError> {
+    identifier(&schema)?;
+    Ok(Json(
+        s.driver.list_tables(&s.target(id).await?, &schema).await?,
+    ))
+}
+async fn columns(
+    State(s): AppState,
+    Path((id, schema, table)): Path<(Uuid, String, String)>,
+) -> Result<Json<Vec<rustdb_core::driver::ColumnInfo>>, AppError> {
+    identifier(&schema)?;
+    identifier(&table)?;
+    Ok(Json(
+        s.driver
+            .list_columns(&s.target(id).await?, &schema, &table)
+            .await?,
+    ))
+}
+fn identifier(value: &str) -> Result<(), AppError> {
+    if value.is_empty() || value.len() > 128 || value.contains('\0') {
+        return Err(AppError::Validation("Invalid schema or table name"));
+    }
+    Ok(())
+}
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct QueryInput {
+    sql: String,
+    max_rows: Option<usize>,
+}
+async fn query(
+    State(s): AppState,
+    Path(id): Path<Uuid>,
+    axum::Extension(limit): axum::Extension<usize>,
+    body: Result<Json<QueryInput>, JsonRejection>,
+) -> Result<Json<rustdb_core::driver::QueryResult>, AppError> {
+    let body = json(body)?;
+    let max_rows = body.max_rows.unwrap_or(limit);
+    if max_rows == 0 || max_rows > limit {
+        return Err(AppError::Validation(
+            "max_rows must be positive and no greater than the server limit",
+        ));
+    }
+    Ok(Json(
+        s.driver
+            .execute_query(&s.target(id).await?, &body.sql, max_rows)
+            .await?,
+    ))
 }
 async fn list(State(s): AppState) -> Result<Json<Vec<ConnectionView>>, AppError> {
     Ok(Json(

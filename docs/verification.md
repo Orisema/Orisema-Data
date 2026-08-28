@@ -68,6 +68,17 @@ Residual risks and unimplemented safeguards are documented in SECURITY.md.
 
 ## Reproduction after infrastructure recovery
 
+### Authorized restart attempt
+
+The user authorized a Podman restart after the initial delivery. The normal stop
+command failed with a WSL root-user lookup I/O error, so only the Podman distribution
+and its Podman network-helper distribution were terminated. Startup then failed with
+`Wsl/Service/CreateInstance/E_UNEXPECTED` and `E_FAIL` before the guest could start.
+Both Podman distributions remain stopped; Debian was left running and untouched.
+No distribution, volume or disk image was deleted or recreated. Approximately 6.4 GiB
+of host free space was available at the start of this attempt. Container verification
+is still blocked; a broader WSL restart requires authorization because it also stops Debian.
+
 1. Ensure adequate host/VM disk space and restore Podman without losing existing volumes.
 2. Run the full PostgreSQL integration command from CONTRIBUTING.md.
 3. Run `podman build -t localhost/rustdb:0.1 .` and `podman compose up -d --build`.

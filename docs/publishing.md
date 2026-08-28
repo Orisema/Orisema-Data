@@ -1,10 +1,13 @@
 # Publishing to GitLab
 
-No remote project has been created automatically. Repository publication is a separate,
-explicitly authorized action. The local repository uses `main` and logical phase commits.
+The public repository was created with explicit user authorization on 2026-08-28:
+https://gitlab.com/CasMaster/rustdb (project ID 85863107).
+The local `main` branch was pushed successfully and is the remote default branch.
+The remote `origin` uses HTTPS and Git Credential Manager; no token is embedded in its URL.
+Project description and topics below remain to be configured.
 
-After reviewing the code and ensuring no secrets are tracked, create a **blank public**
-GitLab project named `rustdb` (do not initialize another README or license). Use:
+For another installation, review the code and ensure no secrets are tracked, then create
+a **blank public** GitLab project named `rustdb` (without another README or license). Use:
 
 Description: Open source web-based database management and SQL client written in Rust.
 

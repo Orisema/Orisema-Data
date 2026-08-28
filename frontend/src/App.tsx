@@ -144,7 +144,10 @@ export default function App() {
         </p>
       )}
       {connections.isPending && <p role="status">Carregando conexões…</p>}
-      <Workspace key={current?.id ?? "none"} connection={current} />
+      <Workspace
+        key={current ? `${current.id}:${current.updated_at}` : "none"}
+        connection={current}
+      />
       <footer className="statusbar">
         <span>PostgreSQL web SQL client</span>
         <span>MVP · Uso local confiável · Sem autenticação</span>

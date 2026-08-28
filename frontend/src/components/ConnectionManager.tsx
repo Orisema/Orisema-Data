@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api";
+import { invalidateConnection } from "../cache";
 import type { Connection, ConnectionInput } from "../types";
 
 export default function ConnectionManager({
@@ -46,7 +47,7 @@ export default function ConnectionManager({
         form,
       ),
     onSuccess: async (c) => {
-      await client.invalidateQueries({ queryKey: ["connections"] });
+      await invalidateConnection(client, c.id);
       onSaved(c.id);
       onClose();
     },

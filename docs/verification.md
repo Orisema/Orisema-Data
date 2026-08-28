@@ -50,6 +50,14 @@ with the PostgreSQL integration test explicitly ignored because the VM was unava
 Windows executable at `target/release/rustdb-server.exe`. These builds used no debug
 symbols to reduce disk consumption; no checks were disabled to hide failures.
 
+Final review checks also passed: `cargo clippy --locked --release --workspace
+--all-targets -- -D warnings`, `cargo fmt --all -- --check`, `git diff --check`,
+frontend lint, **2 frontend tests** and production frontend build. The added cache test
+covers metadata invalidation after editing a connection; workspace state now resets
+on a connection update. This final edit was not re-tested against the unavailable DB
+in the browser. Startup with a deliberately invalid encryption key was rejected with
+exit code 1 and a sanitized log message.
+
 ## Security review scope
 
 Manual implementation review covered secret DTO separation, authenticated encryption,

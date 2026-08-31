@@ -114,24 +114,26 @@ Residual risks and unimplemented safeguards are documented in SECURITY.md.
 - The test PostgreSQL container was restarted because all Podman containers were
   stopped when this session resumed. No unrelated container was started or changed.
 
-These checks do not change the earlier container-image limitation: a clean final
-container build and the remote GitLab pipeline still require separate validation.
+The final container image was rebuilt successfully as `localhost/rustdb:0.2` with
+the pinned `rust:1.92-slim-bookworm` build image. Compose started PostgreSQL and
+RustDB, and the health endpoint returned `{"status":"ok"}` both inside the
+RustDB container and from the Podman machine. On this Windows host the forwarded
+`127.0.0.1:8080` port still refused connections, so browser verification through
+the host port remains environment-limited rather than an application failure.
 
 ## Reproduction after infrastructure recovery
 
-### Authorized restart attempt
+### Infrastructure recovery record
 
-The user authorized a Podman restart after the initial delivery. The normal stop
-command failed with a WSL root-user lookup I/O error, so only the Podman distribution
-and its Podman network-helper distribution were terminated. Startup then failed with
-`Wsl/Service/CreateInstance/E_UNEXPECTED` and `E_FAIL` before the guest could start.
-Both Podman distributions remain stopped; Debian was left running and untouched.
-No distribution, volume or disk image was deleted or recreated. Approximately 6.4 GiB
-of host free space was available at the start of this attempt. Container verification
-is still blocked; a broader WSL restart requires authorization because it also stops Debian.
+The user authorized Podman and full WSL restarts after the initial delivery. A later
+pre-flight found approximately 25.6 GiB free. The current Podman machine is running;
+no volume, disk image, or unrelated service was deleted. A corrupt moving
+`rust:slim-bookworm` layer prevented compilation (`libLLVM.so` could not be read),
+so the build now pins the working `rust:1.92-slim-bookworm` base.
 
 1. Ensure adequate host/VM disk space and restore Podman without losing existing volumes.
 2. Run the full PostgreSQL integration command from CONTRIBUTING.md.
-3. Run `podman build -t localhost/rustdb:0.1 .` and `podman compose up -d --build`.
-4. Verify health and the full browser flow at localhost:8080.
-5. Publish only after an explicit GitLab authorization and review the actual remote CI result.
+3. Run `podman build -t localhost/rustdb:0.2 .` and `podman compose up -d --build`.
+4. Verify health from the Podman machine; if Windows port forwarding is healthy, also
+   run the full browser flow at localhost:8080.
+5. Review the actual remote CI result before publishing further changes.

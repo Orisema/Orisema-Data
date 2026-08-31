@@ -1,4 +1,4 @@
-ARG RUST_IMAGE=rust:slim-bookworm
+ARG RUST_IMAGE=rust:1.92-slim-bookworm
 FROM node:24-bookworm-slim AS web
 WORKDIR /build/frontend
 COPY frontend/package*.json ./

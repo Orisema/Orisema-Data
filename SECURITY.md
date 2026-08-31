@@ -1,6 +1,6 @@
 # Security policy
 
-RustDB v0.1 is an experimental, single-operator local application. It is **not
+RustDB v0.2 is an experimental, single-operator local application. It is **not
 production-ready** and has no authentication, users, RBAC or audit trail.
 
 ## Reporting vulnerabilities
@@ -54,4 +54,7 @@ Timeout/disconnect near COMMIT may leave a write outcome unknown; never blindly 
 SQL text, credentials, connection URLs, driver error details and row values are omitted
 from application logs. Avoid verbose third-party tracing in deployments. SQL errors
 are intentionally sanitized; inspect the target database securely for detailed diagnosis.
-No persistent query audit or history exists.
+Query tabs, execution history and saved queries are persisted unencrypted in the
+browser's local storage. Do not put passwords, access tokens or sensitive production
+data in SQL text on a shared workstation. Clearing site data removes this client-side
+history. This convenience history is not a tamper-resistant audit log.

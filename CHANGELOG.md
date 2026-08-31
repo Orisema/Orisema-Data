@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.0 — 2026-08-31
+
+- Added persistent SQL tabs and connection-specific drafts in browser storage.
+- Added searchable query history, favorites and named saved queries.
+- Added UTF-8 CSV result export with correct field escaping.
+- Added cancellable query executions backed by dedicated PostgreSQL connections.
+- Added metadata-aware Monaco suggestions, light/dark themes and adjustable editor height.
+- Documented the privacy implications of locally persisted SQL text.
+
 ## 0.1.0 — 2026-08-28
 
 Initial experimental MVP:

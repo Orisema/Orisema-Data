@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api, segment } from "../api";
 import type { ColumnInfo, TableInfo } from "../types";
@@ -9,11 +9,13 @@ function Table({
   schema,
   table,
   onQuery,
+  onMetadata,
 }: {
   id: string;
   schema: string;
   table: TableInfo;
   onQuery: (sql: string) => void;
+  onMetadata: (values: string[]) => void;
 }) {
   const [open, setOpen] = useState(false);
   const columns = useQuery({
@@ -24,6 +26,9 @@ function Table({
       ),
     enabled: open,
   });
+  useEffect(() => {
+    if (columns.data) onMetadata(columns.data.map((column) => column.name));
+  }, [columns.data, onMetadata]);
   return (
     <li>
       <div className="tree-line">
@@ -72,10 +77,12 @@ function Schema({
   id,
   name,
   onQuery,
+  onMetadata,
 }: {
   id: string;
   name: string;
   onQuery: (sql: string) => void;
+  onMetadata: (values: string[]) => void;
 }) {
   const [open, setOpen] = useState(false);
   const tables = useQuery({
@@ -84,6 +91,9 @@ function Schema({
       api<TableInfo[]>(`/connections/${id}/schemas/${segment(name)}/tables`),
     enabled: open,
   });
+  useEffect(() => {
+    if (tables.data) onMetadata(tables.data.map((table) => table.name));
+  }, [tables.data, onMetadata]);
   return (
     <li>
       <button
@@ -112,6 +122,7 @@ function Schema({
                       schema={name}
                       table={t}
                       onQuery={onQuery}
+                      onMetadata={onMetadata}
                     />
                   ))}
               </ul>
@@ -125,14 +136,19 @@ function Schema({
 export default function Explorer({
   id,
   onQuery,
+  onMetadata,
 }: {
   id: string;
   onQuery: (sql: string) => void;
+  onMetadata: (values: string[]) => void;
 }) {
   const schemas = useQuery({
     queryKey: ["schemas", id],
     queryFn: () => api<string[]>(`/connections/${id}/schemas`),
   });
+  useEffect(() => {
+    if (schemas.data) onMetadata(schemas.data);
+  }, [schemas.data, onMetadata]);
   return (
     <>
       <div className="explorer-title">
@@ -152,7 +168,7 @@ export default function Explorer({
       )}
       <ul className="tree">
         {schemas.data?.map((name) => (
-          <Schema key={name} id={id} name={name} onQuery={onQuery} />
+          <Schema key={name} id={id} name={name} onQuery={onQuery} onMetadata={onMetadata} />
         ))}
       </ul>
       {schemas.data?.length === 0 && (

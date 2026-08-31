@@ -29,6 +29,7 @@ pub fn router(service: Arc<Service>, max_rows: usize) -> Router {
             get(columns),
         )
         .route("/connections/{id}/query", post(query))
+        .route("/queries/{id}", axum::routing::delete(cancel_query))
         .layer(axum::Extension(max_rows))
         .layer(DefaultBodyLimit::max(128 * 1024))
         .with_state(service)
@@ -69,6 +70,7 @@ fn identifier(value: &str) -> Result<(), AppError> {
 struct QueryInput {
     sql: String,
     max_rows: Option<usize>,
+    query_id: Option<Uuid>,
 }
 async fn query(
     State(s): AppState,
@@ -84,10 +86,21 @@ async fn query(
         ));
     }
     Ok(Json(
-        s.driver
-            .execute_query(&s.target(id).await?, &body.sql, max_rows)
-            .await?,
+        s.execute_query(
+            body.query_id.unwrap_or_else(Uuid::new_v4),
+            id,
+            body.sql,
+            max_rows,
+        )
+        .await?,
     ))
+}
+async fn cancel_query(State(s): AppState, Path(id): Path<Uuid>) -> Result<StatusCode, AppError> {
+    if s.cancel_query(id).await {
+        Ok(StatusCode::NO_CONTENT)
+    } else {
+        Err(AppError::NotFound)
+    }
 }
 async fn list(State(s): AppState) -> Result<Json<Vec<ConnectionView>>, AppError> {
     Ok(Json(

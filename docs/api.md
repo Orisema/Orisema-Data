@@ -17,6 +17,7 @@ This is not an authentication mechanism.
 | GET | `/connections/{id}/schemas/{schema}/tables` | Array of `{name,kind}` (table/view) |
 | GET | `/connections/{id}/schemas/{schema}/tables/{table}/columns` | Array of `{name,type,nullable}` |
 | POST | `/connections/{id}/query` | Query result |
+| DELETE | `/queries/{query_id}` | Cancel an active query (`204`, or `404` if no longer active) |
 
 URL-encode schema and table path segments. IDs are UUIDs. Metadata lists cap at
 10,000 entries and are loaded on demand. Materialized views are not included yet.
@@ -34,7 +35,7 @@ Unknown fields are rejected. Responses contain `has_password`, never passwords.
 ## Query
 
 ```json
-{"sql":"SELECT * FROM produtos LIMIT 100", "max_rows":100}
+{"sql":"SELECT * FROM produtos LIMIT 100", "max_rows":100, "query_id":"02a9d26d-2095-448e-b1d1-9a475c3b3c22"}
 ```
 
 `max_rows` is optional, defaults to the server cap, and cannot exceed it.
@@ -62,8 +63,13 @@ frontend decoders. Duplicate column names retain positional values.
 Exactly one SELECT/query or (when read_only=false) INSERT, UPDATE or DELETE is allowed.
 SELECT uses a server cursor, which excludes modifying CTEs, SELECT INTO and some
 PostgreSQL-specific constructs. Unsupported parser syntax fails closed. Session
-state and transactions do not persist between requests. There is no cancellation API.
+state and transactions do not persist between requests.
+
+Clients that need cancellation include a unique `query_id` UUID in the query request.
+Cancellation aborts the dedicated target connection so it cannot be returned to a pool.
+The `query_id` is optional for compatibility, but a server-generated ID cannot be used
+by the client cancellation endpoint.
 
 Errors use `{"error":{"code":"...","message":"..."}}`. Validation is 400,
-origin rejection 403, missing connection 404, SQL/policy rejection 422, target
+origin rejection 403, missing connection 404, cancellation 409, SQL/policy rejection 422, target
 connection failure 502 and deadline expiry 504. No raw database error is returned.

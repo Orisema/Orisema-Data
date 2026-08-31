@@ -48,6 +48,7 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
             connect_timeout: Duration::from_secs(config.connect_timeout),
             query_timeout: Duration::from_secs(config.query_timeout),
         }),
+        active_queries: service::ActiveQueries::default(),
     });
     let cors = tower_http::cors::CorsLayer::new()
         .allow_origin(config.cors_origin.parse::<axum::http::HeaderValue>()?)

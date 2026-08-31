@@ -96,6 +96,27 @@ logging, TLS defaults, Host/Origin rejection, local-only publication and Docker 
 exclusions. This is not a penetration test or a claim of production readiness.
 Residual risks and unimplemented safeguards are documented in SECURITY.md.
 
+## v0.2 daily-workflow verification — 2026-08-31
+
+- `cargo fmt --all -- --check`, `cargo check --locked --workspace`, the default
+  workspace tests and Clippy with warnings denied passed.
+- The ignored real-PostgreSQL lifecycle test passed through the Podman VM address.
+  It now submits `SELECT pg_sleep(10)`, cancels it by UUID, receives HTTP 409 from
+  the original request and verifies through `pg_stat_activity` that no matching
+  backend query remains active.
+- Frontend lint, four Vitest tests and the Vite production build passed. New tests
+  cover history retention and spreadsheet-safe CSV quoting/formula neutralization.
+- Browser verification on the compiled application confirmed persisted connection
+  and SQL draft state after reload, successful query history, a named saved query,
+  CSV availability, the cancellation control and response, the rename form, light
+  theme rendering and restoration of the safe default draft. The previously noted
+  Monaco lazy-chunk size advisory remains.
+- The test PostgreSQL container was restarted because all Podman containers were
+  stopped when this session resumed. No unrelated container was started or changed.
+
+These checks do not change the earlier container-image limitation: a clean final
+container build and the remote GitLab pipeline still require separate validation.
+
 ## Reproduction after infrastructure recovery
 
 ### Authorized restart attempt

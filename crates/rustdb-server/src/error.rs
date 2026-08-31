@@ -28,6 +28,7 @@ impl IntoResponse for AppError {
             Self::NotFound => (StatusCode::NOT_FOUND, "not_found"),
             Self::Internal => (StatusCode::INTERNAL_SERVER_ERROR, "internal_error"),
             Self::Driver(DriverError::Timeout) => (StatusCode::GATEWAY_TIMEOUT, "timeout"),
+            Self::Driver(DriverError::Cancelled) => (StatusCode::CONFLICT, "query_cancelled"),
             Self::Driver(DriverError::Connection) => (StatusCode::BAD_GATEWAY, "connection_failed"),
             Self::Driver(_) => (StatusCode::UNPROCESSABLE_ENTITY, "query_rejected"),
         };

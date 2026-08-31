@@ -7,7 +7,9 @@ Query Results, Credential Encryption.
 
 ## v0.2
 
-Query History, Saved Queries, CSV Export, Query Cancellation, Improved SQL Editor.
+Implemented: persistent query tabs and drafts, searchable history and favorites,
+saved queries, CSV export, PostgreSQL query cancellation, metadata-aware SQL
+completion, light/dark themes and adjustable editor height.
 
 ## v0.3
 
@@ -23,5 +25,5 @@ RustDB Agent, Remote database access, Temporary support sessions.
 
 ## Future
 
-Oracle, Firebird, Autocomplete, Schema cache, EXPLAIN visualization,
+Oracle, Firebird, richer dialect-aware autocomplete, Schema cache, EXPLAIN visualization,
 Import/export, Team collaboration.

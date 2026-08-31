@@ -1,6 +1,6 @@
 # RustDB
 
-**RustDB v0.1 — PostgreSQL Web SQL Client MVP**
+**RustDB v0.2 — PostgreSQL Web SQL Client**
 
 Open source web-based database management and SQL client written in Rust.
 
@@ -17,7 +17,10 @@ to the Internet or use privileged production accounts. Read [SECURITY.md](SECURI
 - AES-256-GCM credential encryption with an environment-provided key.
 - Lazy schemas, tables, views and columns.
 - Monaco SQL editor with selection execution and Ctrl+Enter / Cmd+Enter.
+- Persistent query tabs, searchable history, favorites and named saved queries.
+- Metadata-aware SQL completion, themes and adjustable editor height.
 - Dynamic results with types, NULL, duration, row counts, horizontal scroll and copying.
+- Spreadsheet-safe UTF-8 CSV export and cancellation of active PostgreSQL queries.
 - Client-side pages of 100 rows keep DOM size bounded; server result cap is configurable.
 - Read-only mode, single-command SQL policy, deadlines and sanitized errors.
 - PostgreSQL internal configuration storage with automatic migrations.
@@ -149,18 +152,19 @@ includes it using its isolated PostgreSQL service.
 
 ## Known limitations
 
-No authentication/RBAC/audit, query history, cancellation, CSV/Excel export, Agent or
-additional drivers. One SQL statement per execution; DDL, COPY, transaction commands,
+No authentication/RBAC/audit, Excel export, Agent or additional drivers. One SQL
+statement per execution; DDL, COPY, transaction commands,
 modifying CTE cursor queries and some dialect syntax are unsupported. Write-enabled
 connections allow DML without WHERE. Read-only is not protection against all functions
 or privileged-account side effects. Limits do not guarantee a cheap database query.
 Results preserve nontrivial types as text, including decimals and bigint. Metadata
 lists cap at 10,000 entries. Monaco produces a large lazy-loaded bundle; build emits
-a size advisory. No query or editor state is persisted across reloads/connections.
+a size advisory. Tabs, SQL history and saved queries are stored unencrypted in the
+current browser profile; avoid entering secrets in SQL text on shared workstations.
 
 ## Roadmap
 
-[Full roadmap](docs/roadmap.md): v0.2 query history/saved queries/CSV/cancellation;
+[Full roadmap](docs/roadmap.md): v0.2 daily-workflow features are implemented;
 v0.3 authentication/RBAC/audit/policies; v0.4 more drivers; v0.5 Agent and remote
 support sessions. Future work includes Oracle, Firebird, autocomplete, EXPLAIN and teams.
 

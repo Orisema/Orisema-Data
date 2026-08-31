@@ -26,6 +26,8 @@ pub enum DriverError {
     Connection,
     #[error("Database operation timed out")]
     Timeout,
+    #[error("Query cancelled by the user")]
+    Cancelled,
     #[error("Query rejected by the database; check SQL, permissions and column names")]
     Query,
     #[error(

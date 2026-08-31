@@ -54,6 +54,7 @@ async fn postgres_api_lifecycle() -> Result<(), Box<dyn std::error::Error>> {
             connect_timeout: Duration::from_secs(5),
             query_timeout: Duration::from_secs(1),
         }),
+        active_queries: crate::service::ActiveQueries::default(),
     });
     let app = api::router(service.clone(), 1000);
     assert_eq!(
@@ -97,6 +98,34 @@ async fn postgres_api_lifecycle() -> Result<(), Box<dyn std::error::Error>> {
         StatusCode::OK
     );
     let query_path = format!("{path}/query");
+
+    let query_id = uuid::Uuid::new_v4();
+    let slow_query = request(
+        &app,
+        "POST",
+        &query_path,
+        json!({"sql":"SELECT pg_sleep(10)", "query_id": query_id}),
+    );
+    let cancellation = async {
+        tokio::time::sleep(Duration::from_millis(250)).await;
+        request(&app, "DELETE", &format!("/queries/{query_id}"), Value::Null).await
+    };
+    let (slow_result, cancel_result) = tokio::join!(slow_query, cancellation);
+    assert_eq!(cancel_result?.0, StatusCode::NO_CONTENT);
+    assert_eq!(slow_result?.0, StatusCode::CONFLICT);
+    let mut still_running = 1_i64;
+    for _ in 0..20 {
+        still_running = sqlx::query_scalar(
+            "SELECT count(*) FROM pg_stat_activity WHERE application_name='rustdb' AND state='active' AND query LIKE '%pg_sleep(10)%'",
+        )
+        .fetch_one(&pool)
+        .await?;
+        if still_running == 0 {
+            break;
+        }
+        tokio::time::sleep(Duration::from_millis(50)).await;
+    }
+    assert_eq!(still_running, 0, "cancelled backend query remained active");
     assert_eq!(
         request(&app, "GET", &format!("{path}/schemas"), Value::Null)
             .await?

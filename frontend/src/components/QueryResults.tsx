@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { QueryResult } from "../types";
 import { cellText } from "../format";
+import { downloadCsv } from "../csv";
 
 export default function QueryResults({
   result,
@@ -29,10 +30,15 @@ export default function QueryResults({
       <div className="section-bar">
         <strong>Resultados</strong>
         {result && (
-          <span className="metrics">
-            Rows: {result.row_count} · Execution: {result.execution_time_ms}ms
-            {result.affected_rows > 0 && ` · Afetadas: ${result.affected_rows}`}
-          </span>
+          <div>
+            <span className="metrics">
+              Linhas: {result.row_count} · Execução: {result.execution_time_ms}ms
+              {result.affected_rows > 0 && ` · Afetadas: ${result.affected_rows}`}
+            </span>
+            {result.columns.length > 0 && (
+              <button onClick={() => downloadCsv(result)}>Exportar CSV</button>
+            )}
+          </div>
         )}
       </div>
       {error && (

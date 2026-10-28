@@ -4,7 +4,7 @@ use crate::{
     models::{ConnectionInput, ConnectionView},
     repository::Repository,
 };
-use rustdb_core::driver::{ConnectionConfig, DatabaseDriver, DriverError, QueryResult, SslMode};
+use orisema_data_core::driver::{ConnectionConfig, DatabaseDriver, DriverError, QueryResult, SslMode};
 use std::{collections::HashMap, sync::Arc};
 use tokio::{sync::Mutex, task::AbortHandle};
 use uuid::Uuid;

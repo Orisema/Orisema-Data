@@ -1,4 +1,4 @@
-use rustdb_core::driver::DriverError;
+use orisema_data_core::driver::DriverError;
 use sqlparser::{ast::Statement, dialect::PostgreSqlDialect, parser::Parser};
 
 /// Narrow MVP allowlist, not a SQL security sandbox. PostgreSQL privileges remain essential.

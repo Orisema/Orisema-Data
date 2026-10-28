@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 
 // Deliberately no Debug or Serialize: this value contains a plaintext secret.
 pub struct ConnectionConfig {
+    pub database_type: String,
     pub host: String,
     pub port: u16,
     pub database_name: String,

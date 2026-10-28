@@ -1,6 +1,6 @@
-# Contributing to RustDB
+# Contributing to Orisema Data
 
-RustDB is currently under active development. Keep changes small, explicit and tested.
+Orisema Data is currently under active development. Keep changes small, explicit and tested.
 Use Rust stable, Node.js 24 LTS, npm and PostgreSQL 17. On Windows, install the Rust
 MSVC build tools and use Podman Desktop or Docker Desktop for PostgreSQL.
 
@@ -11,7 +11,7 @@ tokens, screenshots containing secrets or real connection credentials.
 
 Create a branch from `main`: `feature/*`, `fix/*`, `docs/*` or `refactor/*`.
 Prefer Conventional Commits: `feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`.
-Open a GitLab Merge Request with the purpose, approach, tests and known risks.
+Open a GitHub Pull Request with the purpose, approach, tests and known risks.
 Include screenshots for UI changes using synthetic data only. Do not bypass failing checks.
 
 ```sh

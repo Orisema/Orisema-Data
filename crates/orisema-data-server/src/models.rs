@@ -1,5 +1,5 @@
 use crate::error::AppError;
-use rustdb_core::driver::SslMode;
+use orisema_data_core::driver::SslMode;
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use uuid::Uuid;
@@ -36,9 +36,13 @@ impl ConnectionInput {
                 ));
             }
         }
-        if self.database_type != "postgresql" || self.port == 0 {
+        if !matches!(
+            self.database_type.as_str(),
+            "postgresql" | "mysql" | "mariadb" | "sqlserver"
+        ) || self.port == 0
+        {
             return Err(AppError::Validation(
-                "Only PostgreSQL and ports 1–65535 are supported",
+                "Database type must be postgresql, mysql, mariadb or sqlserver and the port must be 1–65535",
             ));
         }
         if self.host.contains(['/', '\\', '@', ' ', '?', '#']) {
@@ -127,6 +131,13 @@ mod tests {
         assert!(input.validate(false).is_ok());
         input.password = Some(String::new());
         assert!(input.validate(true).is_ok());
+        for database_type in ["mysql", "mariadb", "sqlserver"] {
+            input.database_type = database_type.into();
+            assert!(input.validate(true).is_ok());
+        }
+        input.database_type = "unsupported".into();
+        assert!(input.validate(true).is_err());
+        input.database_type = "postgresql".into();
         input.host = "postgres://secret@host".into();
         assert!(input.validate(false).is_err());
         input.host = "localhost".into();

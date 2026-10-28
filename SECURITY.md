@@ -1,7 +1,6 @@
 # Security policy
 
-RustDB v0.2 is an experimental, single-operator local application. It is **not
-production-ready** and has no authentication, users, RBAC or audit trail.
+Orisema Data v0.3 adds authentication, users, backend-enforced RBAC, audit events and connection policies. It is still **not production-ready** and should remain behind HTTPS and network access controls.
 
 ## Reporting vulnerabilities
 
@@ -14,14 +13,14 @@ Provide affected version, impact and a minimal reproduction using synthetic data
 
 ## Deployment boundary
 
-- Bind to loopback. Never expose RustDB directly to the Internet. CORS and Host/Origin
-  validation are defense in depth, not authentication. Any local process able to reach
+- Bind to loopback. Never expose Orisema Data directly to the Internet. CORS and Host/Origin
+  validation complement authentication but do not replace authorization. Any local process able to reach
   this service can operate its saved connections.
 - Do not use privileged accounts or connect to production databases in this MVP.
-  A user of RustDB can choose target hosts and ports: access to RustDB is access to
+  A user of Orisema Data can choose target hosts and ports: access to Orisema Data is access to
   the server's network. Use firewall/egress restrictions and a trusted workstation.
-- Never expose a database to the Internet to make RustDB work. The Agent is not implemented.
-- Use a dedicated PostgreSQL account with only SELECT permissions for read-only connections.
+- Never expose a database to the Internet to make Orisema Data work. The Agent is not implemented.
+- Use a dedicated target-database account with only the permissions required for read-only connections.
   Do not grant superuser, filesystem/program execution or powerful extension functions.
 - TLS `verify_full` is the default for targets. TLS `disable` is an explicit local-only
   opt-out. Use trusted OS CA certificates; custom per-connection certificates are not supported.
@@ -47,8 +46,8 @@ are no fine-grained policies or user confirmation for individual SQL writes yet.
 Dedicated target connections, client deadlines, server statement timeouts, row limits,
 an 8 MiB estimated result budget (including cell overhead and JSON escaping) and 16 concurrent HTTP handlers reduce accidental
 resource consumption. The driver must receive an individual row before measuring it;
-one huge PostgreSQL field can still allocate significant memory. Row limits do not cap
-database CPU, scan cost or affected rows. Set PostgreSQL resource and role limits too.
+one huge target-database field can still allocate significant memory. Row limits do not cap
+database CPU, scan cost or affected rows. Set target-database resource and role limits too.
 Timeout/disconnect near COMMIT may leave a write outcome unknown; never blindly retry.
 
 SQL text, credentials, connection URLs, driver error details and row values are omitted
@@ -57,4 +56,4 @@ are intentionally sanitized; inspect the target database securely for detailed d
 Query tabs, execution history and saved queries are persisted unencrypted in the
 browser's local storage. Do not put passwords, access tokens or sensitive production
 data in SQL text on a shared workstation. Clearing site data removes this client-side
-history. This convenience history is not a tamper-resistant audit log.
+history. This convenience history is separate from the internal security audit log, which records event metadata but never SQL text or credentials.

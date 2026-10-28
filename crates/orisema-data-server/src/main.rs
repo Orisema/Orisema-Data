@@ -1,13 +1,18 @@
 mod api;
+mod auth;
 mod config;
+mod connection_policy;
 mod crypto;
 mod error;
 mod http;
 mod models;
+mod multi;
+mod mysql;
 mod policy;
 mod postgres;
 mod repository;
 mod service;
+mod sqlserver;
 #[cfg(test)]
 mod tests;
 use sqlx::ConnectOptions;
@@ -41,14 +46,32 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
         .connect_with(options)
         .await?;
     sqlx::migrate!("../../migrations").run(&pool).await?;
+    let auth = auth::Auth::new(
+        pool.clone(),
+        config.cors_origin.starts_with("https://"),
+        &config.bootstrap_token,
+    );
     let service = Arc::new(service::Service {
         repository: repository::Repository(pool),
         credentials,
-        driver: Arc::new(postgres::PostgresDriver {
-            connect_timeout: Duration::from_secs(config.connect_timeout),
-            query_timeout: Duration::from_secs(config.query_timeout),
+        auth,
+        driver: Arc::new(multi::MultiDriver {
+            postgres: Arc::new(postgres::PostgresDriver {
+                connect_timeout: Duration::from_secs(config.connect_timeout),
+                query_timeout: Duration::from_secs(config.query_timeout),
+            }),
+            mysql: Arc::new(mysql::MySqlDriver {
+                connect_timeout: Duration::from_secs(config.connect_timeout),
+                query_timeout: Duration::from_secs(config.query_timeout),
+            }),
+            sqlserver: Arc::new(sqlserver::SqlServerDriver {
+                connect_timeout: Duration::from_secs(config.connect_timeout),
+                query_timeout: Duration::from_secs(config.query_timeout),
+            }),
         }),
         active_queries: service::ActiveQueries::default(),
+        max_rows: config.max_rows,
+        query_timeout: config.query_timeout,
     });
     let cors = tower_http::cors::CorsLayer::new()
         .allow_origin(config.cors_origin.parse::<axum::http::HeaderValue>()?)

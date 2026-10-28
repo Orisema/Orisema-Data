@@ -1,0 +1,13 @@
+import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "../api";
+import type { Role } from "../auth";
+interface Policy {connection_id:string;allowed_roles:Role[];can_write:boolean;max_rows:number;timeout_seconds:number;prohibited_commands:string[]}
+export default function PolicyPanel({connectionId,onClose}:{connectionId:string;onClose:()=>void}){
+ const policy=useQuery({queryKey:["policy",connectionId],queryFn:()=>api<Policy>(`/connections/${connectionId}/policy`)});
+ const [roles,setRoles]=useState<Role[]>([]);const [write,setWrite]=useState(false);const [rows,setRows]=useState(1000);const [timeout,setTimeout]=useState(30);const [commands,setCommands]=useState("");const [notice,setNotice]=useState("");
+ useEffect(()=>{if(policy.data){setRoles(policy.data.allowed_roles);setWrite(policy.data.can_write);setRows(policy.data.max_rows);setTimeout(policy.data.timeout_seconds);setCommands(policy.data.prohibited_commands.join(", "))}},[policy.data]);
+ const toggle=(role:Role)=>setRoles(current=>current.includes(role)?current.filter(v=>v!==role):[...current,role]);
+ const save=async(e:React.FormEvent)=>{e.preventDefault();await api(`/connections/${connectionId}/policy`,"PUT",{allowed_roles:roles,can_write:write,max_rows:rows,timeout_seconds:timeout,prohibited_commands:commands.split(",").map(v=>v.trim()).filter(Boolean)});setNotice("Política salva")};
+ return <div className="modal-backdrop"><form className="dialog compact-dialog" onSubmit={save}><header><h2>Política da conexão</h2><button type="button" aria-label="Fechar" onClick={onClose}>×</button></header>{policy.isPending?<p>Carregando…</p>:<><fieldset><legend>Papéis autorizados</legend>{(["admin","editor","viewer"] as Role[]).map(role=><label key={role}><input type="checkbox" checked={roles.includes(role)} onChange={()=>toggle(role)}/>{role}</label>)}</fieldset><label><input type="checkbox" checked={write} onChange={e=>setWrite(e.target.checked)}/> Permitir escrita para papéis com privilégio</label><label>Limite de linhas<input type="number" min="1" max="10000" value={rows} onChange={e=>setRows(Number(e.target.value))}/></label><label>Timeout (segundos)<input type="number" min="1" max="300" value={timeout} onChange={e=>setTimeout(Number(e.target.value))}/></label><label>Comandos proibidos (separados por vírgula)<input placeholder="DELETE, UPDATE" value={commands} onChange={e=>setCommands(e.target.value)}/></label>{notice&&<p role="status">{notice}</p>}<button className="primary" disabled={roles.length===0}>Salvar política</button></>}</form></div>
+}

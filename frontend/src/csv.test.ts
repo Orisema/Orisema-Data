@@ -13,4 +13,20 @@ describe("queryResultCsv", () => {
     });
     expect(csv).toBe('\uFEFFname,note\r\n"a,b","say ""hi"""\r\n,"line\nbreak"\r\n\'=1+1,-2');
   });
+
+  it("neutralizes every formula prefix, including leading whitespace", () => {
+    const rows = ["=1+1", "+1", "-1", "@SUM(A1)", "\tformula", "\rformula", "  =1+1"];
+    const csv = queryResultCsv({
+      columns: [{ name: "value", type: "text" }],
+      rows: rows.map((value) => [value]),
+      row_count: rows.length,
+      affected_rows: 0,
+      execution_time_ms: 1,
+      truncated: false,
+    });
+
+    expect(csv.split("\r\n").slice(1)).toEqual([
+      "'=1+1", "'+1", "'-1", "'@SUM(A1)", "'\tformula", '"\'\rformula"', "'  =1+1",
+    ]);
+  });
 });

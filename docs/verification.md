@@ -137,3 +137,31 @@ so the build now pins the working `rust:1.92-slim-bookworm` base.
 4. Verify health from the Podman machine; if Windows port forwarding is healthy, also
    run the full browser flow at localhost:8080.
 5. Review the actual remote CI result before publishing further changes.
+
+## v0.2 follow-up verification — 2026-09-08
+
+- `cargo fmt --all -- --check`, `cargo check --locked --workspace`,
+  `cargo test --locked --workspace` and Clippy for all workspace targets with warnings
+  denied passed under the Dockerfile's Rust 1.92 toolchain in an ephemeral container.
+- Default Rust tests passed: 5 executed successfully and the real-PostgreSQL lifecycle
+  test remained ignored because no disposable database or test variables were supplied.
+- Frontend lint, 7 Vitest tests and the production build passed under an available Node
+  22 container. The project documents Node 24, so Node 24 validation remains to be repeated.
+- New tests cover complete workbench restoration, rejection of malformed persisted entries,
+  editor-height clamping and CSV formula prefixes including leading whitespace.
+- The known Monaco lazy-chunk size advisory remains. Manual browser verification was not
+  available because no application/database runtime was started for this follow-up.
+
+## v0.3 security verification — 2026-09-08
+
+- Rust 1.92 container: formatting check, locked workspace check, unit tests and Clippy with warnings denied passed. Login limiting, audit pagination and session revocation were included in the final pass.
+- PostgreSQL 17 disposable integration passed against the final migration. It covered token-gated bootstrap, Argon2id login/session, login throttling, allowed and denied RBAC paths, encrypted target credentials, connection-policy visibility and row cap, audit visibility/events, SQL policy, timeout and cancellation.
+- Node.js 24 container: lint passed, 7 tests passed and production build passed. Vite retained the known Monaco chunk-size advisory.
+- Manual browser verification was unavailable. The existing public v0.2 deployment was intentionally not replaced because a controlled bootstrap token and immediate first-administrator creation are required before exposing v0.3 through Caddy.
+
+## v0.4 multi-driver verification — 2026-09-09
+
+- MySQL 8.4 and MariaDB 11.8 disposable containers passed the same real-driver test: connection, schema/table/column discovery, typed SELECT, row truncation, read-only rejection, authorized UPDATE and affected-row count.
+- SQL Server 2022 Developer started successfully in the environment and passed connection, schema/table/column discovery, streamed SELECT, truncation, read-only rejection, authorized UPDATE and affected-row count.
+- All test credentials were generated ephemerally or used local trust in an isolated test network; values were not persisted or logged.
+- Cancellation for the three new targets is implemented by task abort and dedicated-connection drop and is therefore documented as best-effort at the server.

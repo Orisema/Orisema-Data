@@ -39,6 +39,36 @@ export interface WorkbenchData {
 
 const STORAGE_KEY = "rustdb.workbench.v1";
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const isEditorTab = (value: unknown): value is EditorTab =>
+  isRecord(value) &&
+  typeof value.id === "string" &&
+  typeof value.title === "string" &&
+  typeof value.sql === "string" &&
+  typeof value.connectionId === "string" &&
+  typeof value.updatedAt === "string";
+
+const isHistoryItem = (value: unknown): value is QueryHistoryItem =>
+  isRecord(value) &&
+  typeof value.id === "string" &&
+  typeof value.connectionId === "string" &&
+  typeof value.connectionName === "string" &&
+  typeof value.sql === "string" &&
+  typeof value.executedAt === "string" &&
+  (value.durationMs === undefined || typeof value.durationMs === "number") &&
+  (value.status === "success" || value.status === "error" || value.status === "cancelled") &&
+  typeof value.favorite === "boolean";
+
+const isSavedQuery = (value: unknown): value is SavedQuery =>
+  isRecord(value) &&
+  typeof value.id === "string" &&
+  typeof value.name === "string" &&
+  typeof value.sql === "string" &&
+  typeof value.createdAt === "string" &&
+  typeof value.updatedAt === "string";
+
 export const newId = () => crypto.randomUUID();
 
 export function createTab(connectionId = "", index = 1): EditorTab {
@@ -68,18 +98,22 @@ export function loadWorkbench(): WorkbenchData {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return fallback;
-    const parsed = JSON.parse(raw) as Partial<WorkbenchData>;
+    const parsed: unknown = JSON.parse(raw);
+    if (!isRecord(parsed)) return fallback;
     const tabs = Array.isArray(parsed.tabs) && parsed.tabs.length
-      ? parsed.tabs.filter((tab) => tab && typeof tab.sql === "string")
+      ? parsed.tabs.filter(isEditorTab)
       : fallback.tabs;
+    if (tabs.length === 0) return fallback;
     const activeTabId = tabs.some((tab) => tab.id === parsed.activeTabId)
       ? parsed.activeTabId as string
       : tabs[0].id;
     return {
       tabs,
       activeTabId,
-      history: Array.isArray(parsed.history) ? parsed.history.slice(0, 100) : [],
-      saved: Array.isArray(parsed.saved) ? parsed.saved : [],
+      history: Array.isArray(parsed.history)
+        ? parsed.history.filter(isHistoryItem).slice(0, 100)
+        : [],
+      saved: Array.isArray(parsed.saved) ? parsed.saved.filter(isSavedQuery) : [],
       theme: parsed.theme === "light" ? "light" : "dark",
       editorPercent:
         typeof parsed.editorPercent === "number"

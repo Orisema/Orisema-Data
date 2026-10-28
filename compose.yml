@@ -1,15 +1,17 @@
 services:
-  rustdb:
-    image: localhost/rustdb:0.2
+  orisema-data:
+    image: localhost/orisema-data:0.4
+    restart: unless-stopped
     build:
       context: .
       args:
         RUST_IMAGE: "${RUSTDB_BUILD_IMAGE:-rust:1.92-slim-bookworm}"
     ports:
-      - "127.0.0.1:8080:8080"
+      - "127.0.0.1:${RUSTDB_HOST_PORT:-8083}:8080"
     environment:
       RUSTDB_DATABASE_URL: "postgresql://${POSTGRES_USER:-rustdb}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-rustdb}"
       RUSTDB_ENCRYPTION_KEY: "${RUSTDB_ENCRYPTION_KEY:?Set RUSTDB_ENCRYPTION_KEY in .env}"
+      RUSTDB_BOOTSTRAP_TOKEN: "${RUSTDB_BOOTSTRAP_TOKEN:?Set RUSTDB_BOOTSTRAP_TOKEN in .env}"
       RUSTDB_BIND_ADDRESS: "0.0.0.0"
       RUSTDB_PORT: "8080"
       RUSTDB_CORS_ORIGIN: "${RUSTDB_CORS_ORIGIN:-http://localhost:8080}"
@@ -24,8 +26,12 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
+    networks:
+      - default
+      - hibrido-prod
   postgres:
     image: docker.io/library/postgres:17
+    restart: unless-stopped
     environment:
       POSTGRES_USER: "${POSTGRES_USER:-rustdb}"
       POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}"
@@ -41,3 +47,8 @@ services:
       retries: 10
 volumes:
   rustdb-data:
+networks:
+  default: {}
+  hibrido-prod:
+    external: true
+    name: hibrido-home-office-prod_default

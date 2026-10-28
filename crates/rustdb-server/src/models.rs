@@ -1,5 +1,5 @@
 use crate::error::AppError;
-use rustdb_core::driver::SslMode;
+use orisema_data_core::driver::SslMode;
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use uuid::Uuid;

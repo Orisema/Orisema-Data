@@ -1335,7 +1335,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "rustdb-core"
+name = "orisema-data-core"
 version = "0.2.0"
 dependencies = [
  "async-trait",
@@ -1346,7 +1346,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "rustdb-server"
+name = "orisema-data-server"
 version = "0.2.0"
 dependencies = [
  "aes-gcm",
@@ -1356,7 +1356,7 @@ dependencies = [
  "chrono",
  "dotenvy",
  "futures-util",
- "rustdb-core",
+ "orisema-data-core",
  "serde",
  "serde_json",
  "sqlparser",

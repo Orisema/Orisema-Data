@@ -1,5 +1,5 @@
 [package]
-name = "rustdb-core"
+name = "orisema-data-core"
 version.workspace = true
 edition.workspace = true
 license.workspace = true

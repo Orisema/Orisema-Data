@@ -3,7 +3,7 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
-use rustdb_core::driver::DriverError;
+use orisema_data_core::driver::DriverError;
 
 #[derive(Debug, thiserror::Error)]
 pub enum AppError {

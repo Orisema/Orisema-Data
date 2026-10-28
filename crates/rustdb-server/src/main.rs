@@ -75,7 +75,7 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
             http::protect,
         ));
     let listener = tokio::net::TcpListener::bind(config.bind).await?;
-    tracing::info!(address = %config.bind, "RustDB listening");
+    tracing::info!(address = %config.bind, "Orisema Data listening");
     axum::serve(listener, app)
         .with_graceful_shutdown(async {
             tokio::signal::ctrl_c().await.ok();

@@ -256,7 +256,7 @@ async fn postgres_api_lifecycle() -> Result<(), Box<dyn std::error::Error>> {
         .await;
     assert!(matches!(
         failure,
-        Err(rustdb_core::driver::DriverError::ResultTooLarge)
+        Err(orisema_data_core::driver::DriverError::ResultTooLarge)
     ));
     let value: String = sqlx::query_scalar(&format!("SELECT value FROM {table} LIMIT 1"))
         .fetch_one(&pool)

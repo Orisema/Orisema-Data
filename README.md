@@ -52,8 +52,8 @@ Prerequisites: Git, Node.js 24 (for configuration generation), and Docker Compos
 or Podman with a working Compose provider. The container compiles Rust and the frontend.
 
 ```sh
-git clone https://gitlab.com/CasMaster/rustdb.git
-cd rustdb
+git clone https://github.com/Orisema/Orisema-Data.git
+cd Orisema-Data
 node scripts/init-env.mjs
 podman compose up -d --build
 # Alternatively:
@@ -175,8 +175,9 @@ support sessions. Future work includes Oracle, Firebird, autocomplete, EXPLAIN a
 
 See [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md), the
 [GitLab publishing record](docs/publishing.md), the [GitHub migration plan](docs/github-migration.md)
-and the [authentication/RBAC proposal](docs/auth-rbac.md). The intended future repository
-is `Orisema/Orisema-Data`; this change does not publish or transfer it.
+and the [authentication/RBAC proposal](docs/auth-rbac.md). GitHub is the primary project
+location; the original [GitLab repository](https://gitlab.com/CasMaster/rustdb) remains
+available as the historical transition source.
 
 ## License
 

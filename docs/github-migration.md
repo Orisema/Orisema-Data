@@ -1,35 +1,34 @@
-# GitHub migration plan
+# GitHub migration
 
-The intended destination is `https://github.com/Orisema/Orisema-Data`. The current
-GitLab repository remains the historical source during the transition. No repository
-has been created, transferred or published by this change.
+The repository was mirrored to `https://github.com/Orisema/Orisema-Data` on
+2026-10-28. The GitLab repository remains the historical source during the transition.
+All advertised branches and tags were compared after publication; three branches matched
+exactly and GitLab advertised no tags at migration time.
 
-## Preconditions
+## Completed procedure
 
-1. Merge and tag the Orisema Data rename on GitLab after its pipeline passes.
-2. Confirm the `Orisema` organization owners, repository visibility, branch protection,
-   vulnerability-reporting route and required GitHub Actions checks.
-3. Create one empty GitHub repository named `Orisema-Data`, without generated files.
-4. Verify that the AGPL-3.0-only `LICENSE`, all tags and the complete Git history are present.
+1. Created the empty public repository `Orisema/Orisema-Data`.
+2. Made a bare mirror clone from the public GitLab repository.
+3. Pushed the Git object graph and refs to GitHub over authenticated SSH.
+4. Removed GitLab-only merge-request and pipeline refs from GitHub.
+5. Compared advertised branch/tag refs between both hosts; they matched exactly.
 
-## Authorized migration procedure
+## Repeatable mirror procedure
 
-Run only after explicit authorization, from a clean clone whose `origin` remains GitLab:
+For an explicitly authorized refresh during the transition:
 
 ```sh
-git remote add github git@github.com:Orisema/Orisema-Data.git
-git push github --all
-git push github --tags
+git clone --mirror https://gitlab.com/CasMaster/rustdb.git
+cd rustdb.git
+git push --mirror git@github.com:Orisema/Orisema-Data.git
 ```
 
-Compare branch and tag lists on both hosts, set `main` as the GitHub default branch,
-enable the workflow in `.github/workflows/ci.yml`, and require its Rust and frontend
-jobs. Keep the GitLab remote and project available as a historical reference during
-the transition. Do not create a second unrelated history or squash-import the project.
+Compare branch and tag lists on both hosts and keep the GitLab project available as a
+historical reference during the transition. Do not create a second unrelated history
+or squash-import the project. GitLab-only internal refs should not remain on GitHub.
 
-After validation, update the primary clone URL and contribution links in a dedicated
-documentation change. Whether GitLab becomes read-only, a mirror or an archived project:
-A confirmar.
+GitHub branch protection, required Actions checks, vulnerability reporting, and whether
+GitLab becomes read-only, a mirror or an archived project: A confirmar.
 
 ## Optional Orisema Infrastructure integration
 

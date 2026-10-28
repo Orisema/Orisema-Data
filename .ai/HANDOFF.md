@@ -5,7 +5,7 @@
 - Branch: `ai/codex/orisema-data-rust`, criada sobre o mesmo commit de `main` e preservando o trabalho v0.3/v0.4 que já estava no checkout sem commit.
 - Os crates agora são `orisema-data-core` e `orisema-data-server`; o import Rust é `orisema_data_core`, o pacote frontend é `orisema-data-web` e o executável final é `orisema-data-server`.
 - A identidade visível, Dockerfile, Compose, GitLab CI, README e documentação técnica usam Orisema Data.
-- `.github/workflows/ci.yml` e `docs/github-migration.md` preparam a futura migração para `Orisema/Orisema-Data`, sem criar, publicar ou transferir o repositório.
+- O histórico e as três branches anunciadas foram espelhados em `Orisema/Orisema-Data`; GitLab não anunciava tags. A comparação de refs após a publicação foi idêntica.
 
 ## Compatibilidade preservada
 
@@ -36,4 +36,4 @@
 - A branch reúne o trabalho v0.3/v0.4 preexistente e a renomeação porque esse trabalho estava sem commit no checkout; a revisão deve considerar o conjunto completo.
 - Executar a bateria obrigatória em CI ou em host com Rust 1.92, Node.js 24 e runtime de contêiner antes do merge.
 - Confirmar que instalações operacionais atualizem o nome do serviço Compose de `rustdb` para `orisema-data`; o volume e os dados não mudam.
-- Após pipeline verde e autorização explícita, seguir `docs/github-migration.md`, preservar branches/tags/histórico e manter o GitLab como referência durante a transição.
+- Definir proteção de `main`, checks obrigatórios e o estado final do GitLab; mantê-lo como referência durante a transição.

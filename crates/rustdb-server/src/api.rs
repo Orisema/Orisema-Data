@@ -41,7 +41,7 @@ async fn schemas(State(s): AppState, Path(id): Path<Uuid>) -> Result<Json<Vec<St
 async fn tables(
     State(s): AppState,
     Path((id, schema)): Path<(Uuid, String)>,
-) -> Result<Json<Vec<rustdb_core::driver::TableInfo>>, AppError> {
+) -> Result<Json<Vec<orisema_data_core::driver::TableInfo>>, AppError> {
     identifier(&schema)?;
     Ok(Json(
         s.driver.list_tables(&s.target(id).await?, &schema).await?,
@@ -50,7 +50,7 @@ async fn tables(
 async fn columns(
     State(s): AppState,
     Path((id, schema, table)): Path<(Uuid, String, String)>,
-) -> Result<Json<Vec<rustdb_core::driver::ColumnInfo>>, AppError> {
+) -> Result<Json<Vec<orisema_data_core::driver::ColumnInfo>>, AppError> {
     identifier(&schema)?;
     identifier(&table)?;
     Ok(Json(
@@ -77,7 +77,7 @@ async fn query(
     Path(id): Path<Uuid>,
     axum::Extension(limit): axum::Extension<usize>,
     body: Result<Json<QueryInput>, JsonRejection>,
-) -> Result<Json<rustdb_core::driver::QueryResult>, AppError> {
+) -> Result<Json<orisema_data_core::driver::QueryResult>, AppError> {
     let body = json(body)?;
     let max_rows = body.max_rows.unwrap_or(limit);
     if max_rows == 0 || max_rows > limit {

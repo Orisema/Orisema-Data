@@ -75,3 +75,6 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build runtime image (no push)
         run: docker build --tag orisema-data:ci --file Dockerfile .
+      - name: Verify packaged server and frontend assets
+        run: |
+          docker run --rm --entrypoint /bin/sh orisema-data:ci -c 'test -x /usr/local/bin/orisema-data-server && test -f /app/frontend/dist/index.html'

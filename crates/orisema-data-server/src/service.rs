@@ -4,7 +4,7 @@ use crate::{
     models::{ConnectionInput, ConnectionView},
     repository::Repository,
 };
-use rustdb_core::driver::{ConnectionConfig, DatabaseDriver, DriverError, QueryResult, SslMode};
+use orisema_data_core::driver::{ConnectionConfig, DatabaseDriver, DriverError, QueryResult, SslMode};
 use std::{collections::HashMap, sync::Arc};
 use tokio::{sync::Mutex, task::AbortHandle};
 use uuid::Uuid;
@@ -14,10 +14,19 @@ pub struct Service {
     pub credentials: Credentials,
     pub driver: Arc<dyn DatabaseDriver>,
     pub active_queries: ActiveQueries,
+    pub max_rows: usize,
+    pub query_timeout: u64,
+    pub auth: crate::auth::Auth,
+}
+
+#[derive(Clone)]
+struct ActiveQuery {
+    owner_id: Uuid,
+    handle: AbortHandle,
 }
 
 #[derive(Clone, Default)]
-pub struct ActiveQueries(Arc<Mutex<HashMap<Uuid, AbortHandle>>>);
+pub struct ActiveQueries(Arc<Mutex<HashMap<Uuid, ActiveQuery>>>);
 
 impl Service {
     pub async fn execute_query(
@@ -26,17 +35,40 @@ impl Service {
         connection_id: Uuid,
         sql: String,
         max_rows: usize,
+        user: &crate::auth::CurrentUser,
     ) -> Result<QueryResult, AppError> {
+        let policy = crate::connection_policy::get(
+            &self.repository.0,
+            connection_id,
+            self.max_rows,
+            self.query_timeout,
+        )
+        .await?;
+        let (max_rows, policy_timeout) =
+            crate::connection_policy::enforce(&policy, user, &sql, max_rows)?;
         let target = self.target(connection_id).await?;
         let driver = Arc::clone(&self.driver);
-        let task = tokio::spawn(async move { driver.execute_query(&target, &sql, max_rows).await });
+        let task = tokio::spawn(async move {
+            tokio::time::timeout(
+                policy_timeout,
+                driver.execute_query(&target, &sql, max_rows),
+            )
+            .await
+            .map_err(|_| DriverError::Timeout)?
+        });
         {
             let mut active = self.active_queries.0.lock().await;
             if active.contains_key(&query_id) {
                 task.abort();
                 return Err(AppError::Validation("query_id is already active"));
             }
-            active.insert(query_id, task.abort_handle());
+            active.insert(
+                query_id,
+                ActiveQuery {
+                    owner_id: user.id,
+                    handle: task.abort_handle(),
+                },
+            );
         }
         let result = task.await;
         self.active_queries.0.lock().await.remove(&query_id);
@@ -47,13 +79,21 @@ impl Service {
         }
     }
 
-    pub async fn cancel_query(&self, query_id: Uuid) -> bool {
-        if let Some(handle) = self.active_queries.0.lock().await.remove(&query_id) {
-            handle.abort();
-            true
-        } else {
-            false
+    pub async fn cancel_query(
+        &self,
+        query_id: Uuid,
+        user: &crate::auth::CurrentUser,
+    ) -> Result<bool, AppError> {
+        let mut active = self.active_queries.0.lock().await;
+        let Some(query) = active.get(&query_id) else {
+            return Ok(false);
+        };
+        if query.owner_id != user.id && user.role != crate::auth::Role::Admin {
+            return Err(AppError::Forbidden);
         }
+        let query = active.remove(&query_id).expect("active query was checked");
+        query.handle.abort();
+        Ok(true)
     }
     pub async fn save(
         &self,
@@ -83,6 +123,7 @@ impl Service {
     pub async fn target(&self, id: Uuid) -> Result<ConnectionConfig, AppError> {
         let r = self.repository.get(id).await?;
         Ok(ConnectionConfig {
+            database_type: r.database_type,
             host: r.host,
             port: r.port as u16,
             database_name: r.database_name,

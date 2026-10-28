@@ -8,24 +8,30 @@ use axum::{
 };
 use base64::{Engine, engine::general_purpose::STANDARD};
 use serde_json::{Value, json};
-use std::{sync::Arc, time::Duration};
+use std::{
+    sync::{Arc, OnceLock},
+    time::Duration,
+};
+static TEST_COOKIE: OnceLock<String> = OnceLock::new();
 use tower::ServiceExt;
 
-async fn request(
+async fn request_with_cookie(
     app: &Router,
     method: &str,
     path: &str,
     body: Value,
+    cookie: Option<&str>,
 ) -> Result<(StatusCode, Value), Box<dyn std::error::Error>> {
+    let mut builder = Request::builder()
+        .method(method)
+        .uri(path)
+        .header("content-type", "application/json");
+    if let Some(cookie) = cookie {
+        builder = builder.header("cookie", cookie);
+    }
     let response = app
         .clone()
-        .oneshot(
-            Request::builder()
-                .method(method)
-                .uri(path)
-                .header("content-type", "application/json")
-                .body(Body::from(body.to_string()))?,
-        )
+        .oneshot(builder.body(Body::from(body.to_string()))?)
         .await?;
     let status = response.status();
     let bytes = to_bytes(response.into_body(), 20 * 1024 * 1024).await?;
@@ -39,12 +45,29 @@ async fn request(
     ))
 }
 
+async fn request(
+    app: &Router,
+    method: &str,
+    path: &str,
+    body: Value,
+) -> Result<(StatusCode, Value), Box<dyn std::error::Error>> {
+    request_with_cookie(
+        app,
+        method,
+        path,
+        body,
+        TEST_COOKIE.get().map(String::as_str),
+    )
+    .await
+}
+
 #[tokio::test]
 #[ignore = "Requires RUSTDB_TEST_DATABASE_URL pointing to a disposable PostgreSQL database"]
 async fn postgres_api_lifecycle() -> Result<(), Box<dyn std::error::Error>> {
     let url = std::env::var("RUSTDB_TEST_DATABASE_URL")?;
     let pool = sqlx::PgPool::connect(&url).await?;
     sqlx::migrate!("../../migrations").run(&pool).await?;
+    sqlx::query("TRUNCATE users CASCADE").execute(&pool).await?;
     let options = url.parse::<sqlx::postgres::PgConnectOptions>()?;
     let password = std::env::var("RUSTDB_TEST_PASSWORD").unwrap_or_default();
     let service = Arc::new(Service {
@@ -55,8 +78,72 @@ async fn postgres_api_lifecycle() -> Result<(), Box<dyn std::error::Error>> {
             query_timeout: Duration::from_secs(1),
         }),
         active_queries: crate::service::ActiveQueries::default(),
+        max_rows: 1000,
+        query_timeout: 1,
+        auth: crate::auth::Auth::new(pool.clone(), false, "integration-bootstrap-token"),
     });
     let app = api::router(service.clone(), 1000);
+    assert_eq!(
+        request_with_cookie(&app, "GET", "/connections", Value::Null, None)
+            .await?
+            .0,
+        StatusCode::UNAUTHORIZED
+    );
+    let admin = service
+        .auth
+        .bootstrap(
+            "integration-bootstrap-token",
+            crate::auth::UserInput {
+                email: "admin@example.test".into(),
+                display_name: "Admin".into(),
+                password: Some("integration-password".into()),
+                role: crate::auth::Role::Admin,
+                active: true,
+            },
+        )
+        .await?;
+    service
+        .auth
+        .create_user(
+            &admin,
+            crate::auth::UserInput {
+                email: "viewer@example.test".into(),
+                display_name: "Viewer".into(),
+                password: Some("viewer-password".into()),
+                role: crate::auth::Role::Viewer,
+                active: true,
+            },
+        )
+        .await?;
+    let (_, viewer_cookie) = service
+        .auth
+        .login(crate::auth::LoginInput {
+            email: "viewer@example.test".into(),
+            password: "viewer-password".into(),
+        })
+        .await?;
+    assert_eq!(
+        request_with_cookie(
+            &app,
+            "GET",
+            "/users",
+            Value::Null,
+            Some(viewer_cookie.to_str()?)
+        )
+        .await?
+        .0,
+        StatusCode::FORBIDDEN
+    );
+    let (_, cookie) = service
+        .auth
+        .login(crate::auth::LoginInput {
+            email: "admin@example.test".into(),
+            password: "integration-password".into(),
+        })
+        .await?;
+    TEST_COOKIE
+        .set(cookie.to_str()?.into())
+        .map_err(|_| "test cookie already set")?;
     assert_eq!(
         request(&app, "GET", "/health", Value::Null).await?.1,
         json!({"status":"ok"})
@@ -69,6 +156,61 @@ async fn postgres_api_lifecycle() -> Result<(), Box<dyn std::error::Error>> {
     assert!(created.get("encrypted_password").is_none());
     let id = created["id"].as_str().ok_or("Missing id")?;
     let path = format!("/connections/{id}");
+    let policy_path = format!("{path}/policy");
+    assert_eq!(
+        request(
+            &app,
+            "PUT",
+            &policy_path,
+            json!({"allowed_roles":["admin","viewer"],"can_write":false,"max_rows":2,"timeout_seconds":1,"prohibited_commands":["DELETE"]}),
+        )
+        .await?
+        .0,
+        StatusCode::OK
+    );
+    let viewer_cookie = viewer_cookie.to_str()?;
+    assert_eq!(
+        request_with_cookie(&app, "GET", &path, Value::Null, Some(viewer_cookie))
+            .await?
+            .0,
+        StatusCode::OK
+    );
+    assert_eq!(
+        request_with_cookie(&app, "GET", &policy_path, Value::Null, Some(viewer_cookie))
+            .await?
+            .0,
+        StatusCode::FORBIDDEN
+    );
+    assert_eq!(
+        request_with_cookie(&app, "POST", "/connections", json!({}), Some(viewer_cookie))
+            .await?
+            .0,
+        StatusCode::FORBIDDEN
+    );
+    assert_eq!(
+        request_with_cookie(&app, "GET", "/audit", Value::Null, Some(viewer_cookie))
+            .await?
+            .0,
+        StatusCode::FORBIDDEN
+    );
+    let viewer_result = request_with_cookie(
+        &app,
+        "POST",
+        &format!("{path}/query"),
+        json!({"sql":"SELECT * FROM generate_series(1,10)"}),
+        Some(viewer_cookie),
+    )
+    .await?;
+    assert_eq!(viewer_result.0, StatusCode::OK);
+    assert_eq!(viewer_result.1["row_count"], 2);
+    assert_eq!(viewer_result.1["truncated"], true);
+    let audit = request(&app, "GET", "/audit", Value::Null).await?;
+    assert_eq!(audit.0, StatusCode::OK);
+    assert!(audit.1.as_array().is_some_and(|events| {
+        events
+            .iter()
+            .any(|event| event["event_type"] == "connection.policy_update")
+    }));
     let stored: String =
         sqlx::query_scalar("SELECT encrypted_password FROM connections WHERE id=$1")
             .bind(id.parse::<uuid::Uuid>()?)
@@ -167,7 +309,7 @@ async fn postgres_api_lifecycle() -> Result<(), Box<dyn std::error::Error>> {
         json!({"sql":"SELECT * FROM generate_series(1,100)","max_rows":3}),
     )
     .await?;
-    assert_eq!(result["row_count"], 3);
+    assert_eq!(result["row_count"], 2);
     assert_eq!(result["truncated"], true);
     let (_, result) = request(
         &app,
@@ -256,7 +398,7 @@ async fn postgres_api_lifecycle() -> Result<(), Box<dyn std::error::Error>> {
         .await;
     assert!(matches!(
         failure,
-        Err(rustdb_core::driver::DriverError::ResultTooLarge)
+        Err(orisema_data_core::driver::DriverError::ResultTooLarge)
     ));
     let value: String = sqlx::query_scalar(&format!("SELECT value FROM {table} LIMIT 1"))
         .fetch_one(&pool)

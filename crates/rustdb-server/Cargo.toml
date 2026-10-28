@@ -5,7 +5,7 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
-orisema-data-core = { path = "../orisema-data-core" }
+orisema-data-core = { path = "../rustdb-core" }
 serde.workspace = true
 serde_json.workspace = true
 tokio.workspace = true

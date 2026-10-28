@@ -44,7 +44,7 @@ Existing `RUSTDB_*` configuration and Compose persistence remain unchanged; see 
 
 ## Migration strategy
 
-See [docs/rebranding.md](docs/rebranding.md) and [docs/roadmap.md](docs/roadmap.md). Crate and binary renaming is complete. Future changes to environment variables, Compose services, persisted database objects or volume identifiers require compatibility planning and separate tested changes.
+See [docs/rebranding.md](docs/rebranding.md), [docs/roadmap.md](docs/roadmap.md), and the [safe upgrade checklist](docs/upgrade-safety.md). Crate and binary renaming is complete. Future changes to environment variables, Compose services, persisted database objects or volume identifiers require compatibility planning and separate tested changes.
 
 ## License
 

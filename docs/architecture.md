@@ -1,6 +1,6 @@
 # Architecture
 
-RustDB v0.1 is a single-operator PostgreSQL web SQL client, not a hosted multi-user service.
+Orisema Data v0.2 (formerly RustDB) is a single-operator PostgreSQL web SQL client, not a hosted multi-user service.
 
 ```
 React / TanStack Query / Monaco
@@ -12,8 +12,8 @@ Axum handlers -> connection service -> DatabaseDriver
               Internal PostgreSQL    Target PostgreSQL
 ```
 
-`rustdb-core` owns transport-neutral operations, driver contracts and result models.
-`rustdb-server` owns HTTP, configuration, credential encryption, persistence and the
+`orisema-data-core` owns transport-neutral operations, driver contracts and result models.
+`orisema-data-server` owns HTTP, configuration, credential encryption, persistence and the
 PostgreSQL implementation. No HTTP handler should construct a PostgreSQL driver.
 The application composition root selects the driver. Future agent dispatch can implement
 the same contract without changing the browser's response model. Agent transport and
@@ -23,7 +23,7 @@ The internal database must be separate from databases queried by users. Only enc
 passwords are persisted; public connection DTOs do not contain the encrypted field.
 Migrations run automatically before the server accepts requests.
 
-No authentication is implemented in v0.1. Listen on loopback and use only on a trusted
+No authentication, RBAC or audit trail is implemented in v0.2. Listen on loopback and use only on a trusted
 workstation. CORS is not authentication. Do not expose this service publicly.
 
 ## Query lifecycle

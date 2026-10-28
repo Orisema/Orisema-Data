@@ -67,3 +67,11 @@ jobs:
       - run: npm run lint
       - run: npm test
       - run: npm run build
+
+  container:
+    name: Container build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build runtime image (no push)
+        run: docker build --tag orisema-data:ci --file Dockerfile .

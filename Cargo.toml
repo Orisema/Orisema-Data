@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/orisema-data-core", "crates/orisema-data-server"]
+members = ["crates/rustdb-core", "crates/rustdb-server"]
 resolver = "2"
 
 [workspace.package]

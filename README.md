@@ -16,7 +16,7 @@ Orisema Data is an open source, Rust-powered web database management and SQL cli
 - Rust Axum API, SQLx/PostgreSQL backend and React/TypeScript frontend.
 - Docker/Podman Compose for a trusted local workstation.
 
-**Migration status:** GitHub is now the primary repository. Rust crate names, runtime commands, environment variables and container identifiers still use legacy `rustdb-*` names for compatibility. See [the rebranding plan](docs/rebranding.md).
+**Migration status:** GitHub is now the primary repository. Rust crate packages and server binary use `orisema-data-*`; source directories, environment variables, Compose services, image and volume identifiers retain legacy `rustdb-*` names for compatibility. See [the rebranding plan](docs/rebranding.md).
 
 ## Relationship with Orisema Infrastructure
 
@@ -31,8 +31,8 @@ Orisema Data is an open source, Rust-powered web database management and SQL cli
 Requires Git, Node.js 24 for configuration generation, and Docker Compose or Podman with a Compose provider.
 
 ```sh
-git clone https://gitlab.com/CasMaster/rustdb.git
-cd rustdb
+git clone https://github.com/Orisema/Orisema-Data.git
+cd Orisema-Data
 node scripts/init-env.mjs
 podman compose up -d --build
 # Or: docker compose up -d --build
@@ -40,11 +40,11 @@ podman compose up -d --build
 
 Open `http://localhost:8080` **on the trusted local workstation only**. The internal PostgreSQL service stores encrypted connection configuration; connect to a separate target database. Never expose the web service or the target database publicly. Keep the encryption key backed up securely.
 
-The current development commands and configuration remain documented in the original Git history and `.env.example`; no runtime migration has occurred in this MR.
+Existing `RUSTDB_*` configuration and Compose persistence remain unchanged; see `.env.example` for required settings.
 
 ## Migration strategy
 
-See [docs/rebranding.md](docs/rebranding.md) and [docs/roadmap.md](docs/roadmap.md). Renaming crates, binaries, environment variables, Compose services, persisted database objects or repository URL will require compatibility planning and separate tested changes.
+See [docs/rebranding.md](docs/rebranding.md) and [docs/roadmap.md](docs/roadmap.md). Crate and binary renaming is complete. Future changes to environment variables, Compose services, persisted database objects or volume identifiers require compatibility planning and separate tested changes.
 
 ## License
 

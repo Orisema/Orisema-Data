@@ -3,12 +3,18 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
-use rustdb_core::driver::DriverError;
+use orisema_data_core::driver::DriverError;
 
 #[derive(Debug, thiserror::Error)]
 pub enum AppError {
     #[error("{0}")]
     Validation(&'static str),
+    #[error("Authentication required")]
+    Unauthorized,
+    #[error("Permission denied")]
+    Forbidden,
+    #[error("Too many authentication attempts")]
+    RateLimited,
     #[error("Connection not found")]
     NotFound,
     #[error("Internal operation failed")]
@@ -26,6 +32,9 @@ impl IntoResponse for AppError {
         let (status, code) = match &self {
             Self::Validation(_) => (StatusCode::BAD_REQUEST, "invalid_input"),
             Self::NotFound => (StatusCode::NOT_FOUND, "not_found"),
+            Self::Unauthorized => (StatusCode::UNAUTHORIZED, "unauthorized"),
+            Self::Forbidden => (StatusCode::FORBIDDEN, "forbidden"),
+            Self::RateLimited => (StatusCode::TOO_MANY_REQUESTS, "rate_limited"),
             Self::Internal => (StatusCode::INTERNAL_SERVER_ERROR, "internal_error"),
             Self::Driver(DriverError::Timeout) => (StatusCode::GATEWAY_TIMEOUT, "timeout"),
             Self::Driver(DriverError::Cancelled) => (StatusCode::CONFLICT, "query_cancelled"),

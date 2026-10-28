@@ -8,6 +8,7 @@ pub struct Config {
     pub connect_timeout: u64,
     pub max_rows: usize,
     pub cors_origin: String,
+    pub bootstrap_token: String,
 }
 
 impl Config {
@@ -22,6 +23,10 @@ impl Config {
                 }
                 Ok(value)
             };
+        let bootstrap_token = env::var("RUSTDB_BOOTSTRAP_TOKEN")?;
+        if bootstrap_token.len() < 32 {
+            return Err("RUSTDB_BOOTSTRAP_TOKEN must have at least 32 characters".into());
+        }
         Ok(Self {
             database_url: env::var("RUSTDB_DATABASE_URL")?,
             encryption_key: env::var("RUSTDB_ENCRYPTION_KEY")?,
@@ -36,6 +41,7 @@ impl Config {
             max_rows: number("RUSTDB_MAX_ROWS", 1000, 10000)? as usize,
             cors_origin: env::var("RUSTDB_CORS_ORIGIN")
                 .unwrap_or_else(|_| "http://localhost:5173".into()),
+            bootstrap_token,
         })
     }
 }

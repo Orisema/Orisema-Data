@@ -11,9 +11,10 @@ No promised dates. Checked items below reflect documented RustDB v0.2 capabiliti
 
 ## Phase 0 — Rebranding (first)
 - [x] Introduce Orisema Data project identity and migration plan in documentation.
-- [ ] Inventory and rename internal identifiers with backward compatibility and tests.
-- [ ] Update frontend branding and publishing metadata.
-- [ ] Decide repository hosting and migration separately.
+- [x] Rename Rust package identifiers and server binary, retaining legacy directory and environment variable names.
+- [x] Update frontend HTML title and package metadata.
+- [ ] Verify remaining visible branding and publishing metadata.
+- [x] Migrate primary repository to GitHub `Orisema/Orisema-Data`.
 
 ## Phase 1 — Security for shared use
 - [ ] Authentication and session management.

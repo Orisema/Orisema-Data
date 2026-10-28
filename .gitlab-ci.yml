@@ -56,7 +56,7 @@ frontend:
 build:
   stage: build
   script:
-    - cargo build --locked --release -p rustdb-server
+    - cargo build --locked --release -p orisema-data-server
   artifacts:
-    paths: [target/release/rustdb-server, frontend/dist/]
+    paths: [target/release/orisema-data-server, frontend/dist/]
     expire_in: 7 days

@@ -1,41 +1,29 @@
-# Orisema Data roadmap (formerly RustDB)
+# Roadmap
 
-No promised dates. Checked items below reflect documented RustDB v0.2 capabilities, not independently rerun tests.
+## v0.1 — MVP
 
-## Existing RustDB v0.2
-- [x] PostgreSQL connection manager and tests.
-- [x] Schema explorer, Monaco SQL editor and result grid.
-- [x] Saved queries, tabs, history, CSV and cancellation.
-- [x] Encrypted stored credentials, local Compose and CI.
-- [ ] Authentication, users, RBAC and audit.
+PostgreSQL, Connection Manager, Schema Explorer, Table Explorer, SQL Editor,
+Query Results, Credential Encryption.
 
-## Phase 0 — Rebranding (first)
-- [x] Introduce Orisema Data project identity and migration plan in documentation.
-- [ ] Inventory and rename internal identifiers with backward compatibility and tests.
-- [ ] Update frontend branding and publishing metadata.
-- [ ] Decide repository hosting and migration separately.
+## v0.2
 
-## Phase 1 — Security for shared use
-- [ ] Authentication and session management.
-- [ ] User roles, connection-scoped permissions and audit trail.
-- [ ] Security tests and threat model; prohibit unauthenticated public exposure.
+Implemented: persistent query tabs and drafts, searchable history and favorites,
+saved queries, CSV export, PostgreSQL query cancellation, metadata-aware SQL
+completion, light/dark themes and adjustable editor height.
 
-## Phase 2 — Database instance management
-- [ ] Discover/register PostgreSQL instances and health status.
-- [ ] Manage connection inventory without exposing credentials.
-- [ ] Define safe, least-privilege instance administration.
+## v0.3
 
-## Phase 3 — Optional Orisema Infrastructure integration
-- [ ] RFC for versioned API, authentication, error contracts and lifecycle ownership.
-- [ ] Mock integration and failure-isolation tests.
-- [ ] Optional PostgreSQL instance discovery/registration and connection diagnostics.
-- [ ] Infrastructure manages container lifecycle; Data manages logical database administration.
-- [ ] Neither project requires the other to run.
+Implemented: Authentication, Users, RBAC, Audit Logs, Connection Policies.
 
-## Phase 4 — Expand
-- [ ] MySQL/MariaDB drivers.
-- [ ] Tested backup/restore and additional administration.
-- [ ] Remote access only with authenticated, audited security design.
-- [ ] Future drivers: SQL Server, Firebird, Oracle as separately prioritized.
+## v0.4
 
-**Out of scope:** Gera Base integration, automatic public exposure, mandatory coupling, or an unreviewed license change.
+MySQL, MariaDB, SQL Server.
+
+## v0.5
+
+Orisema Data Agent, Remote database access, Temporary support sessions.
+
+## Future
+
+Oracle, Firebird, richer dialect-aware autocomplete, Schema cache, EXPLAIN visualization,
+Import/export, Team collaboration.

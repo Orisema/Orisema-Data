@@ -1,6 +1,6 @@
 # Orisema Data (formerly RustDB)
 
-**Orisema Data — rebranding proposal for RustDB v0.2**
+**Orisema Data — open-source SQL client, evolving from RustDB v0.2**
 
 Orisema Data is an open source, Rust-powered web database management and SQL client. This project is the continuation of **RustDB**, preserving its Git history and existing implementation.
 
@@ -16,7 +16,7 @@ Orisema Data is an open source, Rust-powered web database management and SQL cli
 - Rust Axum API, SQLx/PostgreSQL backend and React/TypeScript frontend.
 - Docker/Podman Compose for a trusted local workstation.
 
-These features exist in the RustDB codebase; **the package names, commands, environment variables and container images remain `rustdb-*` during this initial documentation-only migration**.
+**Migration status:** GitHub is now the primary repository. Rust crate names, runtime commands, environment variables and container identifiers still use legacy `rustdb-*` names for compatibility. See [the rebranding plan](docs/rebranding.md).
 
 ## Relationship with Orisema Infrastructure
 
@@ -53,3 +53,10 @@ See [docs/rebranding.md](docs/rebranding.md) and [docs/roadmap.md](docs/roadmap.
 ## Security and contributing
 
 Read [SECURITY.md](SECURITY.md), [CONTRIBUTING.md](CONTRIBUTING.md), and [docs/architecture.md](docs/architecture.md).
+
+
+## Repository and CI
+
+- Primary repository: [Orisema/Orisema-Data](https://github.com/Orisema/Orisema-Data).
+- Historical GitLab repository: `CasMaster/rustdb`.
+- GitHub Actions runs Rust formatting, check, tests and Clippy, plus frontend lint, tests and build on pull requests and pushes to `main`.

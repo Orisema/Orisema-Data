@@ -1,11 +1,11 @@
 [package]
-name = "rustdb-server"
+name = "orisema-data-server"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 
 [dependencies]
-rustdb-core = { path = "../rustdb-core" }
+orisema-data-core = { path = "../orisema-data-core" }
 serde.workspace = true
 serde_json.workspace = true
 tokio.workspace = true

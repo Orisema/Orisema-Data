@@ -1,7 +1,7 @@
 export interface Connection {
   id: string;
   name: string;
-  database_type: "postgresql";
+  database_type: "postgresql" | "mysql" | "mariadb" | "sqlserver";
   host: string;
   port: number;
   database_name: string;

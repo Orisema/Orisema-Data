@@ -10,13 +10,16 @@ import ConnectionManager from "./components/ConnectionManager";
 import Explorer from "./components/Explorer";
 import QueryLibrary from "./components/QueryLibrary";
 import QueryResults from "./components/QueryResults";
+import SecurityPanel from "./components/SecurityPanel";
+import PolicyPanel from "./components/PolicyPanel";
+import type { CurrentUser } from "./auth";
 const SqlEditor = lazy(() => import("./components/SqlEditor"));
 
 const SQL_WORDS = [
   "SELECT", "FROM", "WHERE", "JOIN", "LEFT JOIN", "INNER JOIN", "GROUP BY",
   "ORDER BY", "LIMIT", "OFFSET", "INSERT INTO", "UPDATE", "DELETE FROM",
   "RETURNING", "WITH", "AS", "AND", "OR", "NOT", "NULL", "TRUE", "FALSE",
-  "COUNT", "SUM", "AVG", "MIN", "MAX",
+  "COUNT", "SUM", "AVG", "MIN", "MAX", "TOP", "SHOW",
 ];
 
 function Workspace({
@@ -151,9 +154,9 @@ function Workspace({
       <main className={libraryOpen ? "with-library" : ""}>
         <aside>
           {connection ? (
-            <Explorer id={connection.id} onQuery={onSql} onMetadata={registerMetadata} />
+            <Explorer id={connection.id} databaseType={connection.database_type} onQuery={onSql} onMetadata={registerMetadata} />
           ) : (
-            <><h2>Explorer</h2><p>Adicione uma conexão PostgreSQL para explorar schemas, tabelas e views.</p></>
+            <><h2>Explorer</h2><p>Adicione uma conexão para explorar schemas, tabelas e views.</p></>
           )}
         </aside>
         <div className="workspace">
@@ -246,12 +249,14 @@ function Workspace({
     </>
   );
 }
-export default function App() {
+export default function App({ user, onLogout }: { user: CurrentUser; onLogout: () => Promise<void> }) {
   const connections = useQuery({
     queryKey: ["connections"], queryFn: () => api<Connection[]>("/connections"),
   });
   const [workbench, setWorkbench] = useState(loadWorkbench);
   const [manager, setManager] = useState<"new" | "edit" | null>(null);
+  const [securityOpen, setSecurityOpen] = useState(false);
+  const [policyOpen, setPolicyOpen] = useState(false);
   const [renameDraft, setRenameDraft] = useState<{ id: string; title: string } | null>(null);
   const activeTab =
     workbench.tabs.find((tab) => tab.id === workbench.activeTabId) ?? workbench.tabs[0];
@@ -325,11 +330,14 @@ export default function App() {
     <div className="app" data-theme={workbench.theme}>
       <header className="topbar">
         <div className="brand">
-          <span className="brand-icon">R</span>
-          <h1>Rust<span>DB</span></h1>
-          <span className="version">v0.2</span>
+          <span className="brand-icon">O</span>
+          <h1>Orisema <span>Data</span></h1>
+          <span className="version">v0.4</span>
         </div>
         <div className="connection-controls">
+          <span>{user.display_name} · {user.role}</span>
+          {user.role === "admin" && <button onClick={() => setSecurityOpen(true)}>Usuários e auditoria</button>}
+          <button onClick={() => void onLogout()}>Sair</button>
           <button
             aria-label="Alternar tema"
             onClick={() => setWorkbench((state) => ({
@@ -347,8 +355,9 @@ export default function App() {
               <option key={connection.id} value={connection.id}>{connection.name}</option>
             ))}
           </select>
-          <button disabled={!current} onClick={() => setManager("edit")}>Editar</button>
-          <button onClick={() => setManager("new")}>＋ Nova conexão</button>
+          <button disabled={!current || user.role !== "admin"} onClick={() => setManager("edit")}>Editar</button>
+          <button disabled={!current || user.role !== "admin"} onClick={() => setPolicyOpen(true)}>Política</button>
+          {user.role === "admin" && <button onClick={() => setManager("new")}>＋ Nova conexão</button>}
         </div>
       </header>
       <nav className="editor-tabs" aria-label="Abas de consulta">
@@ -375,9 +384,11 @@ export default function App() {
         updateWorkbench={setWorkbench} onSql={updateTab}
       />
       <footer className="statusbar">
-        <span>PostgreSQL web SQL client</span>
-        <span>v0.2 · Dados locais do editor · Sem autenticação</span>
+        <span>Cliente SQL web multi-banco</span>
+        <span>v0.4 · Sessão autenticada · Dados locais do editor</span>
       </footer>
+      {securityOpen && <SecurityPanel currentUser={user} onClose={() => setSecurityOpen(false)} />}
+      {policyOpen && current && <PolicyPanel connectionId={current.id} onClose={() => setPolicyOpen(false)} />}
       {manager && (
         <ConnectionManager
           connection={manager === "edit" ? current : undefined}

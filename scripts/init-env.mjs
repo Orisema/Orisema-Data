@@ -2,8 +2,10 @@ import { randomBytes } from 'node:crypto';
 import { writeFile } from 'node:fs/promises';
 const password = randomBytes(24).toString('hex');
 const key = randomBytes(32).toString('base64');
+const bootstrapToken = randomBytes(32).toString('hex');
 const content = `RUSTDB_DATABASE_URL=postgresql://rustdb:${password}@localhost:5432/rustdb
 RUSTDB_ENCRYPTION_KEY=${key}
+RUSTDB_BOOTSTRAP_TOKEN=${bootstrapToken}
 RUSTDB_BIND_ADDRESS=127.0.0.1
 RUSTDB_PORT=8080
 RUSTDB_CORS_ORIGIN=http://localhost:5173

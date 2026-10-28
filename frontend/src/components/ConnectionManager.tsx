@@ -18,7 +18,7 @@ export default function ConnectionManager({
     connection
       ? {
           name: connection.name,
-          database_type: "postgresql",
+          database_type: connection.database_type,
           host: connection.host,
           port: connection.port,
           database_name: connection.database_name,
@@ -77,13 +77,30 @@ export default function ConnectionManager({
             ×
           </button>
         </header>
-        <p>PostgreSQL · Credenciais armazenadas com criptografia.</p>
+        <p>{form.database_type === "postgresql" ? "PostgreSQL" : form.database_type === "mysql" ? "MySQL" : form.database_type === "mariadb" ? "MariaDB" : "SQL Server"} · Credenciais armazenadas com criptografia.</p>
         <form
           onSubmit={(e) => {
             e.preventDefault();
             save.mutate();
           }}
         >
+          <label>
+            Banco de destino
+            <select
+              value={form.database_type}
+              disabled={Boolean(connection)}
+              onChange={(e) => {
+                const database_type = e.target.value as ConnectionInput["database_type"];
+                const port = database_type === "postgresql" ? 5432 : database_type === "sqlserver" ? 1433 : 3306;
+                setForm({ ...form, database_type, port });
+              }}
+            >
+              <option value="postgresql">PostgreSQL</option>
+              <option value="mysql">MySQL</option>
+              <option value="mariadb">MariaDB</option>
+              <option value="sqlserver">SQL Server</option>
+            </select>
+          </label>
           <label>
             Nome
             <input

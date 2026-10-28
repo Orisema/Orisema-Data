@@ -1,6 +1,6 @@
-# Contributing to RustDB
+# Contributing to Orisema Data
 
-RustDB is currently under active development. Keep changes small, explicit and tested.
+Orisema Data is currently under active development. Keep changes small, explicit and tested.
 Use Rust stable, Node.js 24 LTS, npm and PostgreSQL 17. On Windows, install the Rust
 MSVC build tools and use Podman Desktop or Docker Desktop for PostgreSQL.
 

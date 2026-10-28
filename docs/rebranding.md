@@ -1,10 +1,10 @@
 # RustDB → Orisema Data: compatibility-first migration
 
-This document is a **proposal**, not a declaration that runtime renaming has been completed.
+The repository has moved to GitHub. Runtime identifiers are not yet fully renamed; this document tracks the remaining compatibility-first work.
 
 ## Current baseline
 
-- Public GitLab repository: `CasMaster/rustdb`; default branch `main`.
+- Primary GitHub repository: `Orisema/Orisema-Data`; default branch `main`. Historical GitLab repository: `CasMaster/rustdb`.
 - Rust workspace: `rustdb-core`, `rustdb-server`; frontend package `rustdb-web`.
 - Current version: `0.2.0`; license: `AGPL-3.0-only`.
 - Compose services, image, volume, environment variables, SQL migrations and configuration database currently use RustDB identifiers.

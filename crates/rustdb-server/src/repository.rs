@@ -34,8 +34,8 @@ impl Repository {
             "UPDATE connections SET name=$2,database_type=$3,host=$4,port=$5,database_name=$6,username=$7,encrypted_password=$8,read_only=$9,ssl_mode=$10,updated_at=now() WHERE id=$1 RETURNING *"
         };
         let ssl = match input.ssl_mode {
-            rustdb_core::driver::SslMode::Disable => "disable",
-            rustdb_core::driver::SslMode::VerifyFull => "verify_full",
+            orisema_data_core::driver::SslMode::Disable => "disable",
+            orisema_data_core::driver::SslMode::VerifyFull => "verify_full",
         };
         sqlx::query_as(sql)
             .bind(id)

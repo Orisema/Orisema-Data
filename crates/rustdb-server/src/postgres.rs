@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use futures_util::TryStreamExt;
-use rustdb_core::driver::{
+use orisema_data_core::driver::{
     ColumnInfo, ConnectionConfig, DatabaseDriver, DriverError, QueryResult, ResultColumn, SslMode,
     TableInfo,
 };
